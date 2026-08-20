@@ -2,6 +2,7 @@ from cereal import log
 from openpilot.common.constants import CV
 from openpilot.common.realtime import DT_MDL
 from openpilot.common.params import Params
+from openpilot.selfdrive.nav.nav_desire import navigation_desire
 from numpy import clip
 from enum import Enum, auto
 import time
@@ -162,6 +163,11 @@ class DesireHelper:
 
     self.prev_blinker = None if not one_blinker else (Dir.LEFT if leftBlinker else Dir.RIGHT)
     self.desire = DESIRES[self.lane_change_direction][self.lane_change_state]
+
+    # Nav only when ALC not in a lane-change and driver is not signaling (manual steer / LC).
+    if self.lane_change_state == LaneChangeState.off and not one_blinker:
+      if (nav_desire := navigation_desire(carstate, lateral_active)) != log.Desire.none:
+        self.desire = nav_desire
 
     # Send keep pulse once per second during LaneChangeStart.preLaneChange
     if self.lane_change_state in (LaneChangeState.off, LaneChangeState.laneChangeStarting):

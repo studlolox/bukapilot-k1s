@@ -58,6 +58,9 @@ def only_onroad(started: bool, params: Params, CP: car.CarParams) -> bool:
 def only_offroad(started: bool, params: Params, CP: car.CarParams) -> bool:
   return not started
 
+def run_navigationd(started: bool, params: Params, CP: car.CarParams) -> bool:
+  return started and (params.get("NavDestination") is not None or params.get_bool("NavHasRoute"))
+
 def or_(*fns):
   return lambda *args: operator.or_(*(fn(*args) for fn in fns))
 
@@ -120,5 +123,6 @@ procs = [
   PythonProcess("webjoystick", "tools.bodyteleop.web", notcar),
   PythonProcess("joystick", "tools.joystick.joystick_control", and_(joystick, iscar)),
 ]
+
 
 managed_processes = {p.name: p for p in procs}

@@ -15,6 +15,8 @@ from openpilot.common.realtime import Ratekeeper
 from openpilot.common.swaglog import cloudlog
 from openpilot.system.version import get_version, get_commit, terms_version, training_version
 from openpilot.common.params import Params
+from openpilot.selfdrive.nav.destination_store import set_destination, parse_destination_json
+import json
 from openpilot.system.hardware import HARDWARE
 from opendbc.car.car_helpers import supported_cars
 from openpilot.common.features import Features
@@ -149,7 +151,7 @@ class AppBridge:
     self.sm = sm if sm else messaging.SubMaster([
       'modelV2', 'selfdriveState', 'radarState', 'liveCalibration',
       'driverMonitoringState', 'carState',
-      'uploaderState'
+      'uploaderState', 'gpsLocation', 'navInstruction'
     ])
     self.rk = Ratekeeper(MESSAGE_HZ) # Ratekeeper for loop
     self.last_periodic_time = 0 # Track last periodic task
@@ -243,18 +245,49 @@ class AppBridge:
     threading.Thread(target=get_wlan_info, daemon=True).start()
 
   def send_visualisation_message(self, is_metric):
-    (data := extract_model_data((sm := self.sm)['modelV2'].to_dict()))
+    # Offroad / no model: still send a light frame so nav HUD (and cancel) can update.
+    sm = self.sm
+    try:
+      data = extract_model_data(sm["modelV2"].to_dict())
+    except Exception:
+      data = {}
     data["m"] = is_metric
-    data['d'] = DONGLE_ID
-    update_dict_from_sm(data, sm['selfdriveState'], ["enabled", "state", "experimentalMode",
-                                                     "alertText1", "alertText2", "alertStatus",
-                                                     "alertSize", "personality"])
-    rd = sm['radarState'].to_dict()
-    data["o"] = extract_lead(rd, "leadOne")
-    data["t"] = extract_lead(rd, "leadTwo")
-    update_dict_from_sm(data, sm['driverMonitoringState'], ["isActiveMode"])
-    data["h"] = sm['liveCalibration'].to_dict().get("height", [None])[0]
-    update_dict_from_sm(data, sm['carState'], ["vEgoCluster", "vCruiseCluster"])
+    data["d"] = DONGLE_ID
+    try:
+      update_dict_from_sm(data, sm["selfdriveState"], ["enabled", "state", "experimentalMode",
+                                                       "alertText1", "alertText2", "alertStatus",
+                                                       "alertSize", "personality"])
+      rd = sm["radarState"].to_dict()
+      data["o"] = extract_lead(rd, "leadOne")
+      data["t"] = extract_lead(rd, "leadTwo")
+      update_dict_from_sm(data, sm["driverMonitoringState"], ["isActiveMode"])
+      data["h"] = sm["liveCalibration"].to_dict().get("height", [None])[0]
+      update_dict_from_sm(data, sm["carState"], ["vEgoCluster", "vCruiseCluster"])
+    except Exception:
+      pass
+    # Nav HUD for Visualisation (nv only when active; old apps ignore unknown keys).
+    try:
+      nv = None
+      dn = ''
+      if dest := parse_destination_json(params.get('NavDestination')):
+        dn = str(dest.get('name') or dest.get('place_name') or 'Destination')[:48]
+      if sm.valid.get('navInstruction') and (ni := sm['navInstruction']):
+        primary = str(getattr(ni, 'maneuverPrimaryText', '') or '')
+        secondary = str(getattr(ni, 'maneuverSecondaryText', '') or '')
+        md = float(getattr(ni, 'maneuverDistance', 0.0) or 0.0)
+        rd_m = float(getattr(ni, 'distanceRemaining', 0.0) or 0.0)
+        if primary or md > 0 or rd_m > 0 or dn:
+          nv = {
+            'p': (primary[:48] or dn), 'q': secondary[:48], 'md': md, 'rd': rd_m,
+            'mm': str(getattr(ni, 'maneuverModifier', '') or '')[:16],
+            'mt': str(getattr(ni, 'maneuverType', '') or '')[:16], 'dn': dn,
+          }
+      if nv is None and dn:
+        nv = {'p': dn, 'q': '', 'md': -1.0, 'rd': -1.0, 'mm': '', 'mt': 'destination', 'dn': dn}
+      if nv is not None:
+        data['nv'] = nv
+    except Exception as e:
+      cloudlog.error(f"BLE visualisation nav HUD error: {e}")
     data = quantize(data)
     try:
       self.ble.chunk_and_send(CHANNEL_VISUALISATION, msgpack.packb(data))
@@ -279,6 +312,31 @@ class AppBridge:
     sett['remainingDataUpload'] = f"{int(self.sm['uploaderState'].immediateQueueSize)} MB" if (sd := self.hw_helper.get_sd_status()) is None else sd
     sett['videoDlValid'] = validate_storage(self.hw_helper, sd)[0]
 
+    # Navigation capability (new app gates UI on navCapable; old apps ignore unknown keys).
+    sett['navCapable'] = True
+    try:
+      if self.sm.valid.get('gpsLocation'):
+        g = self.sm['gpsLocation']
+        sett['lastNavPosition'] = {
+          'latitude': float(g.latitude), 'longitude': float(g.longitude),
+          'bearing': float(getattr(g, 'bearingDeg', 0.0) or 0.0),
+        }
+    except Exception:
+      pass
+    sett['navActive'] = bool(safe_get('NavDestination')) or safe_get('NavHasRoute', True)
+    sett['rerouteNeeded'] = safe_get('NavRerouteNeeded', True)
+    sett['hasRoute'] = safe_get('NavHasRoute', True)
+    try:
+      cr = params.get('NavDestinationWaypoints')
+      if isinstance(cr, bytes): cr = cr.decode()
+      sett['navClearReason'] = (json.loads(cr) or {}).get('clearReason', '') if cr else ''
+    except Exception:
+      sett['navClearReason'] = ''
+    sett['NavDesiresAllowed'] = safe_get('NavDesiresAllowed', True)
+    sett['NavLongitudinalAllowed'] = safe_get('NavLongitudinalAllowed', True)
+    sett['NavLanePositioningAllowed'] = safe_get('NavLanePositioningAllowed', True)
+    if (dest := parse_destination_json(params.get('NavDestination'))):
+      sett['navDestination'] = dest
     if 0 <= self.send_car_names_cnt < 3:
       sett['carNames'] = SUPPORTED_CARS
       self.send_car_names_cnt += 1
@@ -383,6 +441,24 @@ class AppBridge:
           self.scan_wifi()
         case 'enableHotspot':
           enable_hotspot()
+        case 'navSetDestination':
+          set_destination(params, settings.get('destination'))
+          params.remove('NavDestinationWaypoints')
+          params.remove('NavRouteData')
+          params.put_bool('NavHasRoute', False)
+          params.put_bool('NavRerouteNeeded', True)
+        case 'navClearDestination':
+          set_destination(params, None)
+          params.remove('NavRouteData')
+          params.put_bool('NavHasRoute', False)
+          params.put_bool('NavRerouteNeeded', False)
+          params.remove('NavInstructionState')
+          params.put('NavDestinationWaypoints', json.dumps({'clearReason': 'manual'}))
+        case 'navPushRoute':
+          if (route := settings.get('route')) is not None:
+            params.put('NavRouteData', route if isinstance(route, str) else json.dumps(route))
+            params.put_bool('NavHasRoute', True)
+            params.put_bool('NavRerouteNeeded', False)
         case 'disableHotspot':
           disable_hotspot()
     except Exception as e:
