@@ -67,7 +67,6 @@ def manager_init() -> None:
     ("IsRHD", "1"),
     ("LogVideoWifiOnly", "0"),
     ("RecordFront", "1"),
-    ("RsjSession", "invalidsession"),
     ("FanPwmOverride", "70.0"),
     ("PowerSaverEntryDuration", "360.0"),
     ("StoppingDistanceOffset", "0.0"),

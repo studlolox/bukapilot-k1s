@@ -34,7 +34,7 @@
     "severity": 0
   },
   "Offroad_UnofficialHardware": {
-    "text": "Device failed to register. It will not connect to or upload to kommu.ai servers, and receives no support from kommu.ai. If this is an official device, contact support@kommu.ai.",
+    "text": "Device failed to register. ezpilot standalone mode active.",
     "severity": 1
   },
   "Offroad_StorageMissing": {
