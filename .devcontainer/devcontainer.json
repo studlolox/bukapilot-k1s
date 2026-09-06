@@ -1,0 +1,25 @@
+{
+  "name": "Bukapilot K1S Baseline Dev Container",
+  "build": {
+    "dockerfile": "../Dockerfile.k1s-dev",
+    "context": ".."
+  },
+  "workspaceMount": "source=${localWorkspaceFolder},target=/tmp/openpilot,type=bind",
+  "workspaceFolder": "/tmp/openpilot",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/bin/python3",
+        "python.analysis.extraPaths": [
+          "/tmp/openpilot",
+          "/tmp/openpilot/pyextra"
+        ]
+      },
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance"
+      ]
+    }
+  },
+  "postCreateCommand": "bash tools/dev/build_ext.sh"
+}
