@@ -2,9 +2,9 @@
 set -e
 
 export GIT_COMMITTER_NAME="ezpilot maintainer"
-export GIT_COMMITTER_EMAIL="maintainer@ezpilot.local"
+export GIT_COMMITTER_EMAIL="student910112@gmail.com"
 export GIT_AUTHOR_NAME="ezpilot maintainer"
-export GIT_AUTHOR_EMAIL="maintainer@ezpilot.local"
+export GIT_AUTHOR_EMAIL="student910112@gmail.com"
 
 VERSION=1-firstbatch
 
