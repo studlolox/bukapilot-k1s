@@ -69,6 +69,7 @@ def manager_init() -> None:
     ("RecordFront", "1"),
     ("DisableUpload", "1"),
     ("DisableVideoRecording", "0"),
+    ("IgnoreDM", "0"),
     ("FanPwmOverride", "70.0"),
     ("PowerSaverEntryDuration", "360.0"),
     ("StoppingDistanceOffset", "0.0"),

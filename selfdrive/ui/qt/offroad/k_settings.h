@@ -80,6 +80,39 @@ private:
   SpinboxControl *powerSaverEntryDurationSb;
 };
 
+class ConfirmParamControl : public ToggleControl {
+  Q_OBJECT
+
+public:
+  ConfirmParamControl(const QString &param, const QString &title, const QString &desc, const QString &icon,
+                      const QString &confirm_prompt, QWidget *parent = nullptr)
+      : ToggleControl(title, desc, icon, false, parent), confirm_prompt(confirm_prompt) {
+    key = param.toStdString();
+    QObject::connect(this, &ToggleControl::toggleFlipped, [=](bool state) {
+      if (state) {
+        if (ConfirmationDialog::confirm(this->confirm_prompt, this)) {
+          params.putBool(key, true);
+        } else {
+          toggle.togglePosition();
+        }
+      } else {
+        params.putBool(key, false);
+      }
+    });
+  }
+
+  void showEvent(QShowEvent *event) override {
+    if (params.getBool(key) != toggle.on) {
+      toggle.togglePosition();
+    }
+  }
+
+private:
+  std::string key;
+  QString confirm_prompt;
+  Params params;
+};
+
 class FeaturesControl : public ButtonControl {
   Q_OBJECT
 

@@ -99,6 +99,20 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
     }
     addItem(toggle);
   }
+
+  auto dm_toggle = new ConfirmParamControl(
+    "IgnoreDM",
+    "Disable Driver Monitoring",
+    "Ignore driver monitoring alerts and disengagements. WARNING: This disables driver attentiveness checks and will not warn or disengage when you are distracted.",
+    "../assets/offroad/icon_monitoring.png",
+    "WARNING: Disabling Driver Monitoring disables attentiveness checks!\n\nAre you sure you want to proceed?",
+    this);
+  bool dm_locked = params.getBool("IgnoreDMLock");
+  dm_toggle->setEnabled(!dm_locked);
+  if (!dm_locked) {
+    connect(uiState(), &UIState::offroadTransition, dm_toggle, &ToggleControl::setEnabled);
+  }
+  addItem(dm_toggle);
 }
 
 DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {

@@ -8,6 +8,7 @@ from common.filter_simple import FirstOrderFilter
 from common.stat_live import RunningStatFilter
 
 from common.features import Features
+from common.params import Params
 
 EventName = car.CarEvent.EventName
 
@@ -138,7 +139,9 @@ class DriverStatus():
 
     self._set_timers(active_monitoring=True)
 
-    self.ignore_dm = Features().has("IgnoreDM")
+    self.params = Params()
+    self.frame_count = 0
+    self.ignore_dm = Features().has("IgnoreDM") or self.params.get_bool("IgnoreDM")
 
   def _set_timers(self, active_monitoring):
     if self.active_monitoring_mode and self.awareness <= self.threshold_prompt:
@@ -245,6 +248,10 @@ class DriverStatus():
       self.hi_stds = 0
 
   def update(self, events, driver_engaged, ctrl_active, standstill):
+    self.frame_count += 1
+    if self.frame_count % 10 == 0:
+      self.ignore_dm = Features().has("IgnoreDM") or self.params.get_bool("IgnoreDM")
+
     if (driver_engaged and self.awareness > 0) or not ctrl_active:
       # reset only when on disengagement if red reached
       self.awareness = 1.
