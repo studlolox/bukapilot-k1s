@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -e
 
-export GIT_COMMITTER_NAME="Penyelidik Kereta"
-export GIT_COMMITTER_EMAIL="bot@blackhole.kommu.ai"
-export GIT_AUTHOR_NAME="Penyelidik Kereta"
-export GIT_AUTHOR_EMAIL="bot@blackhole.kommu.ai"
+export GIT_COMMITTER_NAME="ezpilot maintainer"
+export GIT_COMMITTER_EMAIL="maintainer@ezpilot.local"
+export GIT_AUTHOR_NAME="ezpilot maintainer"
+export GIT_AUTHOR_EMAIL="maintainer@ezpilot.local"
 
 VERSION=1-firstbatch
 
@@ -37,7 +37,7 @@ touch prebuilt
 git add -f .
 
 # Commit
-git commit -m "bukapilot v$VERSION"
+git commit -m "ezpilot v$VERSION"
 
 # Print committed files that are normally gitignored
 #git status --ignored

@@ -269,7 +269,7 @@ def handle_agnos_update(wait_helper: WaitTimeHelper) -> None:
   if cur_version == updated_version:
     return
 
-  # prevent a bukapilot getting swapped in with a mismatched or partially downloaded agnos
+  # prevent an ezpilot getting swapped in with a mismatched or partially downloaded agnos
   set_consistent_flag(False)
 
   cloudlog.info(f"Beginning background installation for AGNOS {updated_version}")
@@ -377,7 +377,7 @@ def fetch_update(wait_helper: WaitTimeHelper) -> bool:
     # Create the finalized, ready-to-swap update
     finalize_update()
     params.put("UpdateStatus", "success")
-    cloudlog.info("bukapilot update successful!")
+    cloudlog.info("ezpilot update successful!")
   else:
     params.put("UpdateStatus", "latest")
     cloudlog.info("nothing new from git at this time")
