@@ -76,6 +76,7 @@ def manager_init() -> None:
     ("DrivePathOffset", "0.0"),
     ("UseStockAcc", "0"),
     ("DisableRadar", "0"),
+    ("ScreenOffDriving", "0"),
   ]
   if not PC:
     default_params.append(("LastUpdateTime", datetime.datetime.utcnow().isoformat().encode('utf8')))

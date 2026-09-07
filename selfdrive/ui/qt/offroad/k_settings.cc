@@ -80,6 +80,12 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       "ezpilot will use the stock ACC instead of ezpilot's ACC.",
       "../assets/offroad/icon_speed_limit.png",
     },
+    {
+      "ScreenOffDriving",
+      "Screen Off While Driving",
+      "Turn off the screen after 15 seconds of driving with no interaction. The screen automatically wakes up when tapped or when a driving alert occurs.",
+      "../assets/offroad/icon_shell.png",
+    },
   };
 
   Params params;

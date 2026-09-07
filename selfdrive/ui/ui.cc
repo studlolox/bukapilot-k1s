@@ -250,6 +250,7 @@ void UIState::update() {
 }
 
 Device::Device(QObject *parent) : brightness_filter(BACKLIGHT_OFFROAD, BACKLIGHT_TS, BACKLIGHT_DT), QObject(parent) {
+  screen_off_driving = Params().getBool("ScreenOffDriving");
   setAwake(true);
   resetInteractiveTimout();
 
@@ -257,6 +258,9 @@ Device::Device(QObject *parent) : brightness_filter(BACKLIGHT_OFFROAD, BACKLIGHT
 }
 
 void Device::update(const UIState &s) {
+  if (s.sm->frame % (UI_FREQ * 2) == 0) {
+    screen_off_driving = Params().getBool("ScreenOffDriving");
+  }
   updateBrightness(s);
   updateWakefulness(s);
 
@@ -267,14 +271,15 @@ void Device::update(const UIState &s) {
 void Device::setAwake(bool on) {
   if (on != awake) {
     awake = on;
-    Hardware::set_display_power(awake);
-    LOGD("setting display power %d", awake);
+    bool power_on = awake || ignition_on;
+    Hardware::set_display_power(power_on);
+    LOGD("setting display power %d", power_on);
     emit displayPowerChanged(awake);
   }
 }
 
 void Device::resetInteractiveTimout() {
-  interactive_timeout = (ignition_on ? 10 : 30) * UI_FREQ;
+  interactive_timeout = (ignition_on ? 15 : 30) * UI_FREQ;
 }
 
 void Device::updateBrightness(const UIState &s) {
@@ -324,13 +329,26 @@ void Device::updateWakefulness(const UIState &s) {
   bool ignition_just_turned_off = !s.scene.ignition && ignition_on;
   ignition_on = s.scene.ignition;
 
-  if (ignition_just_turned_off || motionTriggered(s)) {
+  // Check for active alerts that require screen to be awake
+  bool has_alert = false;
+  if (s.scene.started && s.sm->updated("controlsState")) {
+    auto alert_size = (*s.sm)["controlsState"].getControlsState().getAlertSize();
+    auto alert_status = (*s.sm)["controlsState"].getControlsState().getAlertStatus();
+    has_alert = (alert_size != cereal::ControlsState::AlertSize::NONE) ||
+                (alert_status != cereal::ControlsState::AlertStatus::NORMAL);
+  }
+
+  if (ignition_just_turned_off || (!s.scene.ignition && motionTriggered(s)) || has_alert) {
     resetInteractiveTimout();
   } else if (interactive_timeout > 0 && --interactive_timeout == 0) {
     emit interactiveTimout();
   }
 
-  setAwake(s.scene.ignition || interactive_timeout > 0);
+  if (s.scene.ignition && screen_off_driving) {
+    setAwake(interactive_timeout > 0 || has_alert);
+  } else {
+    setAwake(s.scene.ignition || interactive_timeout > 0);
+  }
 }
 
 UIState *uiState() {

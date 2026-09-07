@@ -164,6 +164,7 @@ private:
   bool awake = false;
   int interactive_timeout = 0;
   bool ignition_on = false;
+  bool screen_off_driving = false;
   int last_brightness = 0;
   FirstOrderFilter brightness_filter;
   QFuture<void> brightness_future;

@@ -190,6 +190,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"StockAccToggle_Allow", PERSISTENT},
     {"UseStockAcc", PERSISTENT},
     {"QuietMode", PERSISTENT},
+    {"ScreenOffDriving", PERSISTENT},
     {"QC_Test", CLEAR_ON_MANAGER_START},
 };
 
