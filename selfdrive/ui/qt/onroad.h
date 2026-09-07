@@ -33,6 +33,8 @@ class OnroadHud : public QWidget {
   Q_PROPERTY(int distanceBars MEMBER distanceBars NOTIFY valueChanged);
   Q_PROPERTY(float leadDistance MEMBER leadDistance NOTIFY valueChanged);
   Q_PROPERTY(bool hasLead MEMBER hasLead NOTIFY valueChanged);
+  Q_PROPERTY(float modelConfidence MEMBER modelConfidence NOTIFY valueChanged);
+  Q_PROPERTY(bool experimentalMode MEMBER experimental_mode NOTIFY valueChanged);
 
 public:
   explicit OnroadHud(QWidget *parent);
@@ -43,12 +45,15 @@ private:
   void drawCapsule(QPainter &p, const QRect &rc);
   void drawSetSpeedBox(QPainter &p, const QRect &rc);
   void drawDistanceBars(QPainter &p, int cx, int y, int bars, const QColor &active_color);
+  void drawConfidenceBall(QPainter &p, int x, int top_y, int bottom_y, float confidence);
   void drawCurrentSpeed(QPainter &p, int cx, int y);
   void drawMiciSteeringWheel(QPainter &p, int cx, int cy, float angle, bool critical);
   void drawTorqueArcBar(QPainter &p, int cx, int cy, int arc_radius, float torque, bool saturated);
   void drawTurnIntent(QPainter &p, int cx, int cy, int dir);
   void drawStatusCapsule(QPainter &p, const QRect &rc, const QString &label, const QString &val, const QColor &color);
   void drawActionBtn(QPainter &p, int x, int y, QPixmap &img, bool active);
+  void drawModeBtn(QPainter &p, int x, int y, bool is_experimental);
+  void drawDriverMonitoringDisc(QPainter &p, int x, int y, bool active, float awareness, bool distracted, bool face_detected, float yaw, float pitch);
   void drawIcon(QPainter &p, int x, int y, QPixmap &img, QBrush bg, float opacity);
   void drawText(QPainter &p, int x, int y, const QString &text, int alpha = 255);
   void paintEvent(QPaintEvent *event) override;
@@ -56,6 +61,8 @@ private:
   QPixmap engage_img;
   QPixmap dm_img;
   QPixmap settings_img;
+  QPixmap exp_img;
+  QPixmap chffr_wheel_img;
   QPixmap wheel_img;
   QPixmap wheel_critical_img;
   QPixmap turn_intent_img;
@@ -76,6 +83,13 @@ private:
   int distanceBars = 3;
   float leadDistance = 0.0f;
   bool hasLead = false;
+  float modelConfidence = 1.0f;
+  bool experimental_mode = false;
+  float dmAwareness = 1.0f;
+  bool dmDistracted = false;
+  bool dmFaceDetected = false;
+  float dmYaw = 0.0f;
+  float dmPitch = 0.0f;
   int thermalStatus = 0;
   bool is_cruise_set = false;
   bool engageable = false;
@@ -116,6 +130,7 @@ protected:
   void showEvent(QShowEvent *event) override;
   void updateFrameMat(int w, int h) override;
   void drawLaneLines(QPainter &painter, const UIScene &scene);
+  QLinearGradient getPathGradient(const UIScene &scene, float a_ego, bool engaged);
   void drawLead(QPainter &painter, const cereal::ModelDataV2::LeadDataV3::Reader &lead_data, const QPointF &vd);
   inline QColor redColor(int alpha = 255) { return QColor(201, 34, 49, alpha); }
   double prev_draw_t = 0;

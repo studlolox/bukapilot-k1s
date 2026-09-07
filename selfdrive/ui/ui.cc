@@ -192,6 +192,7 @@ static void update_state(UIState *s) {
 
 void ui_update_params(UIState *s) {
   s->scene.is_metric = Params().getBool("IsMetric");
+  s->scene.end_to_end = Params().getBool("EndToEndToggle");
 }
 
 void UIState::updateStatus() {
@@ -229,6 +230,7 @@ UIState::UIState(QObject *parent) : QObject(parent) {
     "wideRoadCameraState",
     "uploaderState",
     "lateralPlan",
+    "driverState",
   });
 
   Params params;
