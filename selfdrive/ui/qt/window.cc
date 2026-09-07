@@ -1,6 +1,7 @@
 #include "selfdrive/ui/qt/window.h"
 
 #include <QFontDatabase>
+#include <QKeyEvent>
 
 #include "selfdrive/hardware/hw.h"
 
@@ -76,6 +77,21 @@ void MainWindow::closeSettings() {
 }
 
 bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
+  if (event->type() == QEvent::KeyPress) {
+    QKeyEvent *keyEvent = static_cast<QKeyEvent*>(event);
+    if (keyEvent->key() == Qt::Key_O) {
+      bool onroad = !uiState()->scene.started;
+      if (onroad) {
+        setenv("FORCE_ONROAD", "1", 1);
+      } else {
+        unsetenv("FORCE_ONROAD");
+      }
+      uiState()->scene.started = onroad;
+      emit uiState()->offroadTransition(!onroad);
+      return true;
+    }
+  }
+
   const static QSet<QEvent::Type> evts({QEvent::MouseButtonPress, QEvent::MouseMove,
                                  QEvent::TouchBegin, QEvent::TouchUpdate, QEvent::TouchEnd});
 

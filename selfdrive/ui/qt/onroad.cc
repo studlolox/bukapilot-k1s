@@ -194,6 +194,13 @@ void OnroadHud::updateState(const UIState &s) {
   float temp = sm["deviceState"].getDeviceState().getAmbientTempC() * (s.scene.is_metric ? 1 : 1.8);
   temp += s.scene.is_metric ? 0 : 32;
 
+  if (getenv("FORCE_ONROAD") != NULL && cur_speed == 0.0) {
+    cur_speed = 78.0;
+    maxspeed_str = "80";
+    cruise_set = true;
+    temp = 28.0;
+  }
+
   setProperty("is_cruise_set", cruise_set);
   setProperty("speed", QString::number(std::nearbyint(cur_speed)));
   setProperty("maxSpeed", maxspeed_str);
@@ -203,7 +210,10 @@ void OnroadHud::updateState(const UIState &s) {
   setProperty("status", s.status);
 
   // update engageability and DM icons at 2Hz
-  if (sm.frame % (UI_FREQ / 2) == 0) {
+  if (getenv("FORCE_ONROAD") != NULL) {
+    setProperty("engageable", true);
+    setProperty("dmActive", true);
+  } else if (sm.frame % (UI_FREQ / 2) == 0) {
     setProperty("engageable", cs.getEngageable() || cs.getEnabled());
     setProperty("dmActive", sm["driverMonitoringState"].getDriverMonitoringState().getIsActiveMode());
   }

@@ -187,7 +187,7 @@ static void update_state(UIState *s) {
 
     scene.light_sensor = std::clamp<float>(1.0 - (ev / max_ev), 0.0, 1.0);
   }
-  scene.started = sm["deviceState"].getDeviceState().getStarted() && scene.ignition;
+  scene.started = (getenv("FORCE_ONROAD") != NULL) || (sm["deviceState"].getDeviceState().getStarted() && scene.ignition);
 }
 
 void ui_update_params(UIState *s) {
@@ -195,7 +195,9 @@ void ui_update_params(UIState *s) {
 }
 
 void UIState::updateStatus() {
-  if (scene.started && sm->updated("controlsState")) {
+  if (getenv("FORCE_ONROAD") != NULL) {
+    status = STATUS_ENGAGED;
+  } else if (scene.started && sm->updated("controlsState")) {
     auto controls_state = (*sm)["controlsState"].getControlsState();
     auto alert_status = controls_state.getAlertStatus();
     if (alert_status == cereal::ControlsState::AlertStatus::USER_PROMPT) {

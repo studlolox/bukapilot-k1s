@@ -132,8 +132,8 @@ else:
       f"#third_party/acados/{arch}/lib",
       "/System/Library/Frameworks/OpenGL.framework/Libraries",
     ]
-    cflags += ["-DGL_SILENCE_DEPRECATION"]
-    cxxflags += ["-DGL_SILENCE_DEPRECATION"]
+    cflags += ["-DGL_SILENCE_DEPRECATION", "-Wno-error"]
+    cxxflags += ["-DGL_SILENCE_DEPRECATION", "-Wno-error"]
     cpppath += [
       "/opt/homebrew/include",
       "/usr/local/include",

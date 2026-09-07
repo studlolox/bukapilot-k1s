@@ -49,6 +49,10 @@ HomeWindow::HomeWindow(QWidget* parent) : QWidget(parent) {
 
   timer = new QTimer(this);
   timer->callOnTimeout(this, &HomeWindow::refresh);
+
+  if (getenv("FORCE_ONROAD") != NULL) {
+    offroadTransition(false);
+  }
 }
 
 void HomeWindow::showEvent(QShowEvent *event) {
