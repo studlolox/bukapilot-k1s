@@ -19,6 +19,11 @@ def is_registered_device() -> bool:
   return dongle not in (None, UNREGISTERED_DONGLE_ID)
 
 
+def get_deterministic_dongle_id(imei: str, serial: str) -> str:
+  raw_id = (imei + serial) if imei else serial
+  return hashlib.sha224(raw_id.encode()).hexdigest()[:16]
+
+
 def register(show_spinner=False) -> str:
   params = Params()
   params.put("SubscriberInfo", HARDWARE.get_subscriber_info())
@@ -58,8 +63,7 @@ def register(show_spinner=False) -> str:
     params.put("HardwareSerial", serial)
 
     # Deterministic local Dongle ID derivation
-    raw_id = (imei + serial) if imei else serial
-    dongle_id = hashlib.sha224(raw_id.encode()).hexdigest()[:16]
+    dongle_id = get_deterministic_dongle_id(imei, serial)
 
     if show_spinner:
       spinner.close()
