@@ -194,11 +194,20 @@ void OnroadHud::updateState(const UIState &s) {
   float temp = sm["deviceState"].getDeviceState().getAmbientTempC() * (s.scene.is_metric ? 1 : 1.8);
   temp += s.scene.is_metric ? 0 : 32;
 
+  float steer_angle = sm["carState"].getCarState().getSteeringAngleDeg();
+  bool steer_override = sm["carState"].getCarState().getSteeringPressed();
+  bool lat_active = cs.getEnabled();
+  int thermal_st = (int)sm["deviceState"].getDeviceState().getThermalStatus();
+
   if (getenv("FORCE_ONROAD") != NULL && cur_speed == 0.0) {
     cur_speed = 78.0;
     maxspeed_str = "80";
     cruise_set = true;
     temp = 28.0;
+    steer_angle = -4.5f;
+    steer_override = false;
+    lat_active = true;
+    thermal_st = 0;
   }
 
   setProperty("is_cruise_set", cruise_set);
@@ -206,6 +215,10 @@ void OnroadHud::updateState(const UIState &s) {
   setProperty("maxSpeed", maxspeed_str);
   setProperty("speedUnit", s.scene.is_metric ? "km/h" : "mph");
   setProperty("temperature", QString::number(std::nearbyint(temp)) + (s.scene.is_metric ? "°C" : "°F"));
+  setProperty("steerAngleDeg", steer_angle);
+  setProperty("steerOverride", steer_override);
+  setProperty("lateralActive", lat_active);
+  setProperty("thermalStatus", thermal_st);
   setProperty("hideDM", cs.getAlertSize() != cereal::ControlsState::AlertSize::NONE);
   setProperty("status", s.status);
 
@@ -228,61 +241,121 @@ void OnroadHud::manualMouseEvent(QMouseEvent *e) {
       emit openSettings();
 }
 
+void OnroadHud::drawCapsule(QPainter &p, const QRect &rc) {
+  p.setPen(QPen(QColor(255, 255, 255, 45), 2));
+  p.setBrush(QColor(18, 22, 30, 180));
+  p.drawRoundedRect(rc, 24, 24);
+}
+
+void OnroadHud::drawSteerWheel(QPainter &p, int cx, int cy, float angle, QColor color) {
+  p.save();
+  p.translate(cx, cy);
+  p.rotate(angle);
+
+  // Outer steering ring
+  p.setPen(QPen(color, 3, Qt::SolidLine, Qt::RoundCap));
+  p.setBrush(Qt::NoBrush);
+  p.drawEllipse(-18, -18, 36, 36);
+
+  // Center hub
+  p.setBrush(color);
+  p.setPen(Qt::NoPen);
+  p.drawEllipse(-4, -4, 8, 8);
+
+  // Spokes (left, right, bottom)
+  p.setPen(QPen(color, 2.5, Qt::SolidLine, Qt::RoundCap));
+  p.drawLine(-17, 0, -4, 0);
+  p.drawLine(4, 0, 17, 0);
+  p.drawLine(0, 4, 0, 17);
+
+  p.restore();
+}
+
+void OnroadHud::drawActionBtn(QPainter &p, int x, int y, QPixmap &img, bool active) {
+  p.setPen(QPen(QColor(255, 255, 255, 40), 2));
+  p.setBrush(QColor(18, 22, 30, active ? 180 : 120));
+  p.drawEllipse(x - radius / 2, y - radius / 2, radius, radius);
+  p.setOpacity(active ? 1.0 : 0.4);
+  p.drawPixmap(x - img_size / 2, y - img_size / 2, img);
+  p.setOpacity(1.0);
+}
+
 void OnroadHud::paintEvent(QPaintEvent *event) {
   QPainter p(this);
   p.setRenderHint(QPainter::Antialiasing);
 
-  // Header gradient
-  QLinearGradient bg(0, header_h - (header_h / 2.5), 0, header_h);
-  bg.setColorAt(0, QColor::fromRgbF(0, 0, 0, 0.45));
-  bg.setColorAt(1, QColor::fromRgbF(0, 0, 0, 0));
+  // Smooth cinematic header gradient
+  QLinearGradient bg(0, 0, 0, header_h);
+  bg.setColorAt(0, QColor(0, 0, 0, 160));
+  bg.setColorAt(0.65, QColor(0, 0, 0, 60));
+  bg.setColorAt(1, QColor(0, 0, 0, 0));
   p.fillRect(0, 0, width(), header_h, bg);
 
-  // max speed
+  // 1. MAX Speed capsule (top-left)
   QRect rc(bdr_s * 2, bdr_s * 1.5, 184, 202);
-  p.setPen(QPen(QColor(0xff, 0xff, 0xff, 100), 10));
-  p.setBrush(QColor(0, 0, 0, 100));
-  p.drawRoundedRect(rc, 20, 20);
-  p.setPen(Qt::NoPen);
+  drawCapsule(p, rc);
 
-  configFont(p, "Open Sans", 48, "Regular");
-  drawText(p, rc.center().x(), 118, "MAX", is_cruise_set ? 200 : 100);
+  configFont(p, "Inter", 36, "Medium");
+  drawText(p, rc.center().x(), 95, "MAX", 220);
   if (is_cruise_set) {
-    configFont(p, "Open Sans", 88, is_cruise_set ? "Bold" : "SemiBold");
-    drawText(p, rc.center().x(), 212, maxSpeed, 255);
+    configFont(p, "Inter", 82, "Bold");
+    drawText(p, rc.center().x(), 182, maxSpeed, 255);
   } else {
-    configFont(p, "Open Sans", 80, "SemiBold");
-    drawText(p, rc.center().x(), 212, maxSpeed, 100);
+    configFont(p, "Inter", 74, "SemiBold");
+    drawText(p, rc.center().x(), 182, maxSpeed, 100);
   }
 
-  // current speed
-  configFont(p, "Open Sans", 176, "Bold");
-  drawText(p, rect().center().x(), 210, speed);
-  configFont(p, "Open Sans", 66, "Regular");
-  drawText(p, rect().center().x(), 290, speedUnit, 200);
+  // 2. Real-time STEER Gauge capsule (next to MAX speed)
+  QRect steer_rc(bdr_s * 2 + 184 + 20, bdr_s * 1.5, 184, 202);
+  drawCapsule(p, steer_rc);
 
-  // temperature
+  configFont(p, "Inter", 36, "Medium");
+  drawText(p, steer_rc.center().x(), 95, "STEER", 220);
+
+  QColor steer_col = QColor(226, 232, 240);
+  if (steerOverride) {
+    steer_col = QColor(245, 158, 11);       // Amber on override
+  } else if (lateralActive) {
+    steer_col = QColor(16, 185, 129);       // Emerald when auto-steering
+  }
+  drawSteerWheel(p, steer_rc.center().x(), 136, steerAngleDeg, steer_col);
+
+  QString angle_str = (steerAngleDeg > 0.0f ? "+" : "") + QString::number(std::round(steerAngleDeg)) + "°";
+  configFont(p, "Inter", 42, "SemiBold");
+  p.setPen(steer_col);
+  drawText(p, steer_rc.center().x(), 205, angle_str, 255);
+
+  // 3. Current Speed (center)
+  configFont(p, "Inter", 180, "Bold");
+  drawText(p, rect().center().x(), 200, speed);
+  configFont(p, "Inter", 44, "Medium");
+  drawText(p, rect().center().x(), 265, speedUnit, 200);
+
+  // 4. TEMP capsule (top-right)
   QRect temp_rc(rect().right() - bdr_s * 2 - 184, bdr_s * 1.5, 184, 202);
-  p.setPen(QPen(QColor(0xff, 0xff, 0xff, 100), 10));
-  p.setBrush(QColor(0, 0, 0, 100));
-  p.drawRoundedRect(temp_rc, 20, 20);
-  p.setPen(Qt::NoPen);
+  drawCapsule(p, temp_rc);
 
-  configFont(p, "Open Sans", 48, "Regular");
-  drawText(p, temp_rc.center().x(), 118, "TEMP", 200);
-  configFont(p, "Open Sans", 66, "Bold");
-  drawText(p, temp_rc.center().x(), 212, temperature, 255);
+  configFont(p, "Inter", 36, "Medium");
+  drawText(p, temp_rc.center().x(), 95, "TEMP", 220);
 
-  // dm icon
+  QColor temp_col = QColor(240, 243, 246);
+  if (thermalStatus == (int)cereal::DeviceState::ThermalStatus::YELLOW) {
+    temp_col = QColor(251, 191, 36);        // Amber warning
+  } else if (thermalStatus >= (int)cereal::DeviceState::ThermalStatus::RED) {
+    temp_col = QColor(248, 113, 113);       // Coral alert
+  }
+  configFont(p, "Inter", 64, "Bold");
+  p.setPen(temp_col);
+  drawText(p, temp_rc.center().x(), 182, temperature, 255);
+
+  // 5. Bottom floating action discs (DM & Settings)
   if (!hideDM) {
-    drawIcon(p, rect().right() - radius / 2 - (bdr_s * 2), rect().bottom() - footer_h / 2,
-             dm_img, QColor(0, 0, 0, 70), dmActive ? 1.0 : 0.2);
+    drawActionBtn(p, rect().right() - radius / 2 - (bdr_s * 2), rect().bottom() - footer_h / 2,
+                  dm_img, dmActive);
   }
 
-  // settings icon
-  drawIcon(p, radius / 2 + (bdr_s * 2), rect().bottom() - footer_h / 2,
-           settings_img, QColor(0, 0, 0, 70), engageable ? 1.0 : 0.2);
-
+  drawActionBtn(p, radius / 2 + (bdr_s * 2), rect().bottom() - footer_h / 2,
+                settings_img, engageable);
 }
 
 void OnroadHud::drawText(QPainter &p, int x, int y, const QString &text, int alpha) {

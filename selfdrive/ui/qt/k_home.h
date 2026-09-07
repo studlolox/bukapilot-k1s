@@ -55,7 +55,7 @@ class OffroadHome : public QFrame {
   Q_OBJECT
 
 public:
-  bool hasSevereAlerts;
+  bool hasSevereAlerts = false;
   explicit OffroadHome(QWidget* parent = 0);
 
 public slots:
@@ -63,18 +63,16 @@ public slots:
 
 private:
   Params params;
-  int update_state = -1; // tri-state of -1 (not inited), 0 (no update) and 1 (available)
-  StatusLabel *device_text;
-  StatusLabel *temperature_text;
-  QLabel *remaining_upload;
-  QLabel *updates_text;
-  QLabel *upload_speed;
-  std::unordered_map<cereal::DeviceState::ThermalStatus, QPixmap> status_icons = {
-    {cereal::DeviceState::ThermalStatus::GREEN, QPixmap("../assets/kommu/green_circle.png")},
-    {cereal::DeviceState::ThermalStatus::YELLOW, QPixmap("../assets/kommu/yellow_circle.png")},
-    {cereal::DeviceState::ThermalStatus::RED, QPixmap("../assets/kommu/red_circle.png")},
-    {cereal::DeviceState::ThermalStatus::DANGER, QPixmap("../assets/kommu/red_circle.png")},
-  };
+  QLabel *vehicle_title;
+  QLabel *system_status_pill;
+  QLabel *panda_status_label;
+  QLabel *gps_status_label;
+
+  QLabel *temperature_value;
+  QLabel *thermal_tier_label;
+  QLabel *storage_value;
+
+  QLabel *version_label;
 };
 
 class HomeWindow : public QWidget {

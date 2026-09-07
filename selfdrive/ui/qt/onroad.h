@@ -17,6 +17,10 @@ class OnroadHud : public QWidget {
   Q_PROPERTY(QString speedUnit MEMBER speedUnit NOTIFY valueChanged);
   Q_PROPERTY(QString maxSpeed MEMBER maxSpeed NOTIFY valueChanged);
   Q_PROPERTY(QString temperature MEMBER temperature NOTIFY valueChanged);
+  Q_PROPERTY(float steerAngleDeg MEMBER steerAngleDeg NOTIFY valueChanged);
+  Q_PROPERTY(bool steerOverride MEMBER steerOverride NOTIFY valueChanged);
+  Q_PROPERTY(bool lateralActive MEMBER lateralActive NOTIFY valueChanged);
+  Q_PROPERTY(int thermalStatus MEMBER thermalStatus NOTIFY valueChanged);
   Q_PROPERTY(bool is_cruise_set MEMBER is_cruise_set NOTIFY valueChanged);
   Q_PROPERTY(bool engageable MEMBER engageable NOTIFY valueChanged);
   Q_PROPERTY(bool dmActive MEMBER dmActive NOTIFY valueChanged);
@@ -29,6 +33,9 @@ public:
   void manualMouseEvent(QMouseEvent *e);
 
 private:
+  void drawCapsule(QPainter &p, const QRect &rc);
+  void drawSteerWheel(QPainter &p, int cx, int cy, float angle, QColor color);
+  void drawActionBtn(QPainter &p, int x, int y, QPixmap &img, bool active);
   void drawIcon(QPainter &p, int x, int y, QPixmap &img, QBrush bg, float opacity);
   void drawText(QPainter &p, int x, int y, const QString &text, int alpha = 255);
   void paintEvent(QPaintEvent *event) override;
@@ -42,6 +49,10 @@ private:
   QString speedUnit;
   QString maxSpeed;
   QString temperature;
+  float steerAngleDeg = 0.0f;
+  bool steerOverride = false;
+  bool lateralActive = false;
+  int thermalStatus = 0;
   bool is_cruise_set = false;
   bool engageable = false;
   bool dmActive = false;

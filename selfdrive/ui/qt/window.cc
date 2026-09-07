@@ -51,13 +51,18 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent) {
   });
 
   // load fonts
+  QFontDatabase::addApplicationFont("../assets/fonts/Inter-Regular.ttf");
+  QFontDatabase::addApplicationFont("../assets/fonts/Inter-Medium.ttf");
+  QFontDatabase::addApplicationFont("../assets/fonts/Inter-SemiBold.ttf");
+  QFontDatabase::addApplicationFont("../assets/fonts/Inter-Bold.ttf");
+  QFontDatabase::addApplicationFont("../assets/fonts/Inter-ExtraBold.ttf");
   QFontDatabase::addApplicationFont("../assets/fonts/GlacialIndifference-Regular.otf");
   QFontDatabase::addApplicationFont("../assets/fonts/GlacialIndifference-Bold.otf");
 
   // no outline to prevent the focus rectangle
   setStyleSheet(R"(
     * {
-      font-family: Glacial Indifference;
+      font-family: Inter, Glacial Indifference, sans-serif;
       outline: none;
     }
   )");

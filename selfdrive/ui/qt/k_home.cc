@@ -120,11 +120,11 @@ QFrame *horizontal_rule(QWidget *parent) {
   auto line = new QFrame(parent);
   line->setFrameShape(QFrame::StyledPanel);
   line->setStyleSheet(R"(
-    margin-left: 90px;
-    margin-right: 100px;
+    margin-top: 10px;
+    margin-bottom: 10px;
     border-width: 1px;
     border-bottom-style: solid;
-    border-color: gray;
+    border-color: rgba(255, 255, 255, 0.08);
   )");
   line->setFixedHeight(2);
   return line;
@@ -159,133 +159,244 @@ void QrWidget::setContent(const char *content) {
   img = QPixmap::fromImage(im, Qt::MonoOnly);
 }
 
-// OffroadHome: the offroad home page
+// OffroadHome: Modernized 3-card vehicle dashboard
 
 OffroadHome::OffroadHome(QWidget* parent) : QFrame(parent) {
-  auto main_layout = new QGridLayout(this);
-  main_layout->setContentsMargins(25, 25, 25, 25);
-  main_layout->setHorizontalSpacing(35);
+  auto main_layout = new QHBoxLayout(this);
+  main_layout->setContentsMargins(35, 35, 35, 35);
+  main_layout->setSpacing(25);
 
-  auto status = new QWidget(this);
-  status->setAttribute(Qt::WA_StyledBackground);
-  status->setFixedWidth(500);
-  status->setStyleSheet("background-color: rgb(32, 32, 32); border-radius: 25px;");
-  auto status_layout = new QVBoxLayout(status);
-  status_layout->setContentsMargins(50, 50, 50, 50);
-  status_layout->setSpacing(50);
-  device_text = new StatusLabel("SYSTEM\nREADY", status_icons[cereal::DeviceState::ThermalStatus::GREEN], this);
-  device_text->setStyleSheet("padding-top: 300px;");
-  device_text->setMinimumHeight(250);
-  status_layout->addWidget(device_text);
-  status_layout->addWidget(horizontal_rule(this));
-  auto device_temperature_label = new QLabel("DEVICE TEMPERATURE");
-  device_temperature_label->setStyleSheet("font-size: 50px;");
-  device_temperature_label->setWordWrap(true);
-  device_temperature_label->setAlignment(Qt::AlignHCenter);
-  device_temperature_label->setFixedHeight(150);
-  status_layout->addWidget(device_temperature_label);
-  temperature_text = new StatusLabel("0 °C", status_icons[cereal::DeviceState::ThermalStatus::RED], this);
-  status_layout->addWidget(temperature_text);
-  main_layout->addWidget(status, 0, 0, 2, 1);
-
-  auto qr = new QWidget(this);
-  qr->setAttribute(Qt::WA_StyledBackground);
-  auto qr_layout = new QHBoxLayout(qr);
-  auto qr_label = new QLabel("ezpilot K1S Edition\nScan to view documentation and updates.");
-  qr_label->setStyleSheet("font-size: 45px; padding: 15px;");
-  qr_label->setWordWrap(true);
-  qr_label->setMaximumWidth(650);
-  qr_layout->addWidget(qr_label);
-  auto qr_code = new QrWidget("https://github.com/studlolox/bukapilot-k1s", this);
-  qr_code->setFixedSize(300, 300);
-  qr_layout->addWidget(qr_code);
-  main_layout->addWidget(qr, 0, 1, 1, 2);
-
-  auto updates = new ClickableWidget(this);
-  updates->setAttribute(Qt::WA_StyledBackground);
-  updates->setStyleSheet("background-color: rgb(32, 32, 32); border-radius: 25px; font-size: 40px;");
-  auto updates_layout = new QVBoxLayout(updates);
-  updates_layout->setContentsMargins(50, 50, 50, 50);
-  updates_text = new QLabel("loading...");
-  updates_text->setAlignment(Qt::AlignTop);
-  updates_text->setFixedHeight(425);
-  updates_text->setWordWrap(true);
-  updates_layout->addWidget(updates_text);
-  connect(updates, &ClickableWidget::clicked, [=] {
-    (new Popup("Release Notes", updates_text->text(), Popup::OK, this))->exec();
-  });
-  main_layout->addWidget(updates, 1, 1);
-
-  auto drive = new QWidget(this);
-  drive->setAttribute(Qt::WA_StyledBackground);
-  drive->setStyleSheet("background-color: rgb(32, 32, 32); border-radius: 25px; font-size: 40px;");
-  auto drive_layout = new QVBoxLayout(drive);
-  drive_layout->setContentsMargins(50, 50, 50, 50);
-  auto drive_header = new QLabel("Drive Data");
-  drive_header->setStyleSheet("font-size: 50px;");
-  drive_layout->addWidget(drive_header);
-  drive_layout->addWidget(new QLabel("Remaining Upload"));
-  remaining_upload = new QLabel("loading...");
-  remaining_upload->setAlignment(Qt::AlignRight);
-  drive_layout->addWidget(remaining_upload);
-  drive_layout->addWidget(horizontal_rule(this));
-  drive_layout->addWidget(new QLabel("Upload Speed"));
-  upload_speed = new QLabel("loading...");
-  upload_speed->setAlignment(Qt::AlignRight);
-  drive_layout->addWidget(upload_speed);
-  main_layout->addWidget(drive, 1, 2);
-
-  setStyleSheet(R"(
-    * {
-     color: white;
+  const QString card_style = R"(
+    QFrame {
+      background-color: #141722;
+      border: 1.5px solid rgba(255, 255, 255, 0.09);
+      border-radius: 24px;
     }
-    OffroadHome {
-      background-color: black;
-    }
-    OffroadHome > QLabel {
-      font-size: 50px;
-    }
+  )";
+
+  // ===== CARD 1: Vehicle & ADAS State =====
+  auto card_vehicle = new QFrame(this);
+  card_vehicle->setStyleSheet(card_style);
+  auto v_layout = new QVBoxLayout(card_vehicle);
+  v_layout->setContentsMargins(35, 35, 35, 35);
+  v_layout->setSpacing(14);
+
+  auto v_tag = new QLabel("VEHICLE & ADAS", card_vehicle);
+  v_tag->setStyleSheet("font-size: 24px; font-weight: 600; color: #8E929B; letter-spacing: 1px; border: none; background: transparent;");
+  v_layout->addWidget(v_tag);
+
+  vehicle_title = new QLabel("Toyota Corolla Cross", card_vehicle);
+  vehicle_title->setStyleSheet("font-size: 38px; font-weight: 700; color: #FFFFFF; border: none; background: transparent;");
+  vehicle_title->setWordWrap(true);
+  v_layout->addWidget(vehicle_title);
+
+  auto vehicle_sub = new QLabel("TSS 2.0 (No-DSU ADAS)", card_vehicle);
+  vehicle_sub->setStyleSheet("font-size: 26px; font-weight: 500; color: #A0A5B5; border: none; background: transparent;");
+  v_layout->addWidget(vehicle_sub);
+
+  v_layout->addWidget(horizontal_rule(card_vehicle));
+
+  // System Status Pill
+  system_status_pill = new QLabel("SYSTEM READY", card_vehicle);
+  system_status_pill->setAlignment(Qt::AlignCenter);
+  system_status_pill->setFixedHeight(62);
+  system_status_pill->setStyleSheet(R"(
+    background-color: #133526;
+    color: #10B981;
+    border: 1.5px solid #10B981;
+    border-radius: 16px;
+    font-size: 26px;
+    font-weight: 700;
   )");
+  v_layout->addWidget(system_status_pill);
+
+  v_layout->addSpacing(8);
+
+  panda_status_label = new QLabel("● Panda Connected (TSS2)", card_vehicle);
+  panda_status_label->setStyleSheet("font-size: 26px; font-weight: 500; color: #E2E8F0; border: none; background: transparent;");
+  v_layout->addWidget(panda_status_label);
+
+  gps_status_label = new QLabel("● GPS Locked (3D Fix)", card_vehicle);
+  gps_status_label->setStyleSheet("font-size: 26px; font-weight: 500; color: #E2E8F0; border: none; background: transparent;");
+  v_layout->addWidget(gps_status_label);
+
+  auto camera_status_label = new QLabel("● Vision System Standby", card_vehicle);
+  camera_status_label->setStyleSheet("font-size: 26px; font-weight: 500; color: #94A3B8; border: none; background: transparent;");
+  v_layout->addWidget(camera_status_label);
+
+  v_layout->addStretch();
+  main_layout->addWidget(card_vehicle, 1);
+
+  // ===== CARD 2: Device Health & Thermals =====
+  auto card_hardware = new QFrame(this);
+  card_hardware->setStyleSheet(card_style);
+  auto h_layout = new QVBoxLayout(card_hardware);
+  h_layout->setContentsMargins(35, 35, 35, 35);
+  h_layout->setSpacing(14);
+
+  auto h_tag = new QLabel("DEVICE HEALTH & THERMALS", card_hardware);
+  h_tag->setStyleSheet("font-size: 24px; font-weight: 600; color: #8E929B; letter-spacing: 1px; border: none; background: transparent;");
+  h_layout->addWidget(h_tag);
+
+  auto temp_title = new QLabel("Chassis Ambient", card_hardware);
+  temp_title->setStyleSheet("font-size: 30px; font-weight: 600; color: #E2E8F0; border: none; background: transparent;");
+  h_layout->addWidget(temp_title);
+
+  temperature_value = new QLabel("0 °C", card_hardware);
+  temperature_value->setStyleSheet("font-size: 72px; font-weight: 800; color: #10B981; border: none; background: transparent;");
+  h_layout->addWidget(temperature_value);
+
+  thermal_tier_label = new QLabel("Thermal Status: Nominal", card_hardware);
+  thermal_tier_label->setStyleSheet("font-size: 26px; font-weight: 600; color: #10B981; border: none; background: transparent;");
+  h_layout->addWidget(thermal_tier_label);
+
+  h_layout->addWidget(horizontal_rule(card_hardware));
+
+  auto storage_title = new QLabel("Internal Flash Storage", card_hardware);
+  storage_title->setStyleSheet("font-size: 28px; font-weight: 600; color: #E2E8F0; border: none; background: transparent;");
+  h_layout->addWidget(storage_title);
+
+  storage_value = new QLabel("Calculating...", card_hardware);
+  storage_value->setStyleSheet("font-size: 34px; font-weight: 700; color: #A0A5B5; border: none; background: transparent;");
+  h_layout->addWidget(storage_value);
+
+  h_layout->addStretch();
+  main_layout->addWidget(card_hardware, 1);
+
+  // ===== CARD 3: ezpilot Software & Docs =====
+  auto card_info = new QFrame(this);
+  card_info->setStyleSheet(card_style);
+  auto i_layout = new QVBoxLayout(card_info);
+  i_layout->setContentsMargins(35, 35, 35, 35);
+  i_layout->setSpacing(14);
+
+  auto i_tag = new QLabel("SOFTWARE & SYSTEM", card_info);
+  i_tag->setStyleSheet("font-size: 24px; font-weight: 600; color: #8E929B; letter-spacing: 1px; border: none; background: transparent;");
+  i_layout->addWidget(i_tag);
+
+  auto fork_title = new QLabel("ezpilot K1S", card_info);
+  fork_title->setStyleSheet("font-size: 38px; font-weight: 700; color: #FFFFFF; border: none; background: transparent;");
+  i_layout->addWidget(fork_title);
+
+  version_label = new QLabel("Independent Edition", card_info);
+  version_label->setStyleSheet("font-size: 26px; font-weight: 500; color: #A0A5B5; border: none; background: transparent;");
+  i_layout->addWidget(version_label);
+
+  i_layout->addWidget(horizontal_rule(card_info));
+
+  auto branch_label = new QLabel("Branch: k1s-independent", card_info);
+  branch_label->setStyleSheet("font-size: 24px; font-weight: 500; color: #8E929B; border: none; background: transparent;");
+  i_layout->addWidget(branch_label);
+
+  auto qr_container = new QWidget(card_info);
+  qr_container->setStyleSheet("border: none; background: transparent;");
+  auto qr_layout = new QHBoxLayout(qr_container);
+  qr_layout->setContentsMargins(0, 10, 0, 0);
+
+  auto qr_widget = new QrWidget("https://github.com/studlolox/bukapilot-k1s", card_info);
+  qr_widget->setFixedSize(185, 185);
+  qr_layout->addWidget(qr_widget);
+
+  auto qr_desc = new QLabel("Scan QR for\nsource code &\ndocumentation.", card_info);
+  qr_desc->setStyleSheet("font-size: 22px; font-weight: 500; color: #94A3B8; border: none; background: transparent;");
+  qr_desc->setWordWrap(true);
+  qr_layout->addWidget(qr_desc);
+
+  i_layout->addWidget(qr_container);
+
+  i_layout->addStretch();
+  main_layout->addWidget(card_info, 1);
+
+  setStyleSheet("OffroadHome { background-color: #0B0D13; }");
 }
 
 void OffroadHome::updateState(const UIState& s) {
   auto& sm = *(s.sm);
 
-  bool hasError = false;
-  hasError |= s.scene.pandaType == cereal::PandaState::PandaType::UNKNOWN;
-
-  bool initialising = false;
-  initialising |= hasSevereAlerts;
+  // 1. Vehicle & System Status
+  bool hasError = (s.scene.pandaType == cereal::PandaState::PandaType::UNKNOWN);
+  bool initialising = hasSevereAlerts;
 
   if (hasError) {
-    device_text->icon = status_icons[cereal::DeviceState::ThermalStatus::RED];
-    device_text->text = "DEVICE ERROR";
-  }
-  else if (initialising) {
-    device_text->icon = status_icons[cereal::DeviceState::ThermalStatus::YELLOW];
-    device_text->text = "GETTING READY";
+    system_status_pill->setText("NO PANDA DETECTED");
+    system_status_pill->setStyleSheet(R"(
+      background-color: #381B1B;
+      color: #EF4444;
+      border: 1.5px solid #EF4444;
+      border-radius: 16px;
+      font-size: 24px;
+      font-weight: 700;
+    )");
+    panda_status_label->setText("● Panda Disconnected");
+    panda_status_label->setStyleSheet("font-size: 26px; font-weight: 500; color: #EF4444; border: none; background: transparent;");
+  } else if (initialising) {
+    system_status_pill->setText("GETTING READY");
+    system_status_pill->setStyleSheet(R"(
+      background-color: #3B2E15;
+      color: #F59E0B;
+      border: 1.5px solid #F59E0B;
+      border-radius: 16px;
+      font-size: 24px;
+      font-weight: 700;
+    )");
+    panda_status_label->setText("● Panda Online (TSS2)");
+    panda_status_label->setStyleSheet("font-size: 26px; font-weight: 500; color: #F59E0B; border: none; background: transparent;");
   } else {
-    device_text->icon = status_icons[cereal::DeviceState::ThermalStatus::GREEN];
-    device_text->text = "SYSTEM READY";
+    system_status_pill->setText("SYSTEM READY");
+    system_status_pill->setStyleSheet(R"(
+      background-color: #133526;
+      color: #10B981;
+      border: 1.5px solid #10B981;
+      border-radius: 16px;
+      font-size: 26px;
+      font-weight: 700;
+    )");
+    panda_status_label->setText("● Panda Online (TSS2)");
+    panda_status_label->setStyleSheet("font-size: 26px; font-weight: 500; color: #10B981; border: none; background: transparent;");
   }
-  device_text->update();
 
+  // GPS Fix
+  bool gps_ok = sm["liveLocationKalman"].getLiveLocationKalman().getGpsOK();
+  if (gps_ok) {
+    gps_status_label->setText("● GPS Locked (3D Fix)");
+    gps_status_label->setStyleSheet("font-size: 26px; font-weight: 500; color: #10B981; border: none; background: transparent;");
+  } else {
+    gps_status_label->setText("● GPS Searching Satellite...");
+    gps_status_label->setStyleSheet("font-size: 26px; font-weight: 500; color: #94A3B8; border: none; background: transparent;");
+  }
+
+  // Vehicle model display
+  std::string car_name = params.get("CarModel");
+  if (!car_name.empty()) {
+    vehicle_title->setText(QString::fromStdString(car_name));
+  } else {
+    vehicle_title->setText("Toyota Corolla Cross");
+  }
+
+  // 2. Hardware & Thermals
   auto deviceState = sm["deviceState"].getDeviceState();
-  temperature_text->icon = status_icons[deviceState.getThermalStatus()];
-  temperature_text->text = QString::number((int)deviceState.getAmbientTempC()) + "°C";
-  temperature_text->update();
+  float ambient = deviceState.getAmbientTempC();
+  temperature_value->setText(QString::number((int)std::round(ambient)) + " °C");
 
-  auto uploaderState = sm["uploaderState"].getUploaderState();
-  remaining_upload->setText(QString::number(uploaderState.getImmediateQueueSize() + uploaderState.getRawQueueSize()) + " MB");
-  upload_speed->setText(QString::number(uploaderState.getLastSpeed()) + " MB/s");
-
-  auto newUpdateState = (int) params.getBool("UpdateAvailable");
-  if (update_state != newUpdateState) {
-    update_state = newUpdateState;
-    updates_text->setText(QString::fromStdString(
-        ((update_state) ?
-          "An update is available!\nNext version:\n\n" :
-          "You're up to date!\nCurrent version:\n\n")
-        + params.get("ReleaseNotes")));
+  auto ts = deviceState.getThermalStatus();
+  if (ts == cereal::DeviceState::ThermalStatus::GREEN) {
+    temperature_value->setStyleSheet("font-size: 72px; font-weight: 800; color: #10B981; border: none; background: transparent;");
+    thermal_tier_label->setText("Thermal Status: Nominal");
+    thermal_tier_label->setStyleSheet("font-size: 26px; font-weight: 600; color: #10B981; border: none; background: transparent;");
+  } else if (ts == cereal::DeviceState::ThermalStatus::YELLOW) {
+    temperature_value->setStyleSheet("font-size: 72px; font-weight: 800; color: #F59E0B; border: none; background: transparent;");
+    thermal_tier_label->setText("Thermal Status: Warm (Cooling Active)");
+    thermal_tier_label->setStyleSheet("font-size: 26px; font-weight: 600; color: #F59E0B; border: none; background: transparent;");
+  } else {
+    temperature_value->setStyleSheet("font-size: 72px; font-weight: 800; color: #EF4444; border: none; background: transparent;");
+    thermal_tier_label->setText("Thermal Status: Overheat Prevention");
+    thermal_tier_label->setStyleSheet("font-size: 26px; font-weight: 600; color: #EF4444; border: none; background: transparent;");
   }
+
+  // Storage
+  int free_percent = (int)deviceState.getFreeSpacePercent();
+  storage_value->setText(QString::number(free_percent) + "% Available");
+
+  // Version
+  version_label->setText(getBrandVersion());
 }
