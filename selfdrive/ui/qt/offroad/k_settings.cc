@@ -28,9 +28,9 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
   std::vector<std::tuple<QString, QString, QString, QString>> toggles{
     {
       "OpenpilotEnabledToggle",
-      "Enable bukapilot",
-      "Use the bukapilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature. Changing this setting takes effect when the car is powered off.",
-      "../assets/kommu/icon_bukapilot.png",
+      "Enable ezpilot",
+      "Use the ezpilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature. Changing this setting takes effect when the car is powered off.",
+      "../assets/kommu/icon_ezpilot.png",
     },
     {
       "IsLdwEnabled",
@@ -42,13 +42,13 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       "IsAlcEnabled",
       "Enable Assisted Lane Change",
       "Assisted Lane Change will assist your vehicle in a single lane change when a steering nudge and the vehicle's signal lights are turned on. This features works over 31mph (50 km/h).",
-      "../assets/kommu/icon_bukapilot.png",
+      "../assets/kommu/icon_ezpilot.png",
     },
     {
       "IsRHD",
       "Enable Right-Hand Drive",
-      "Allow bukapilot to obey left-hand traffic conventions and perform driver monitoring on right driver seat.",
-      "../assets/kommu/icon_bukapilot_mirrored.png",
+      "Allow ezpilot to obey left-hand traffic conventions and perform driver monitoring on right driver seat.",
+      "../assets/kommu/icon_ezpilot_mirrored.png",
     },
     {
       "QuietMode",
@@ -75,8 +75,8 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
   if (params.getBool("DisableRadar_Allow")) {
     toggles.push_back({
       "DisableRadar",
-      "bukapilot Longitudinal Control",
-      "bukapilot will disable the car's radar and will take over control of gas and brakes. Warning: this disables AEB!",
+      "ezpilot Longitudinal Control",
+      "ezpilot will disable the car's radar and will take over control of gas and brakes. Warning: this disables AEB!",
       "../assets/offroad/icon_speed_limit.png",
     });
   }
@@ -84,7 +84,7 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
     toggles.push_back({
       "UseStockAcc",
       "Stock Longitudinal Control",
-      "bukapilot will use the stock ACC instead of bukapilot's ACC.",
+      "ezpilot will use the stock ACC instead of ezpilot's ACC.",
       "../assets/offroad/icon_speed_limit.png",
     });
   }
@@ -210,8 +210,8 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
 
 void DevicePanel::updateCalibDescription() {
   QString desc =
-      "bukapilot requires the device to be mounted within 4° left or right and "
-      "within 5° up or 8° down. bukapilot is continuously calibrating, resetting is rarely required.";
+      "ezpilot requires the device to be mounted within 4° left or right and "
+      "within 5° up or 8° down. ezpilot is continuously calibrating, resetting is rarely required.";
   std::string calib_bytes = Params().get("CalibrationParams");
   if (!calib_bytes.empty()) {
     try {
@@ -281,7 +281,7 @@ SoftwarePanel::SoftwarePanel(QWidget* parent) : ListWidget(parent) {
   gitCommitLbl = new LabelControl("Git Commit");
   osVersionLbl = new LabelControl("OS Version");
   versionLbl = new LabelControl("Version", "", getVersion());
-  lastUpdateLbl = new LabelControl("Last Update Status", "", "The status bukapilot last checked for an update. The updater only runs while the car is off.");
+  lastUpdateLbl = new LabelControl("Last Update Status", "", "The status ezpilot last checked for an update. The updater only runs while the car is off.");
   updateBtn = new ButtonControl("Check for Update", "");
   featuresInput = new FeaturesControl();
   fingerprintInput = new FixFingerprintSelect();

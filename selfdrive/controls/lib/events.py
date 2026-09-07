@@ -137,7 +137,7 @@ class Alert:
 
 class NoEntryAlert(Alert):
   def __init__(self, alert_text_2: str, visual_alert: car.CarControl.HUDControl.VisualAlert=VisualAlert.none):
-    super().__init__("bukapilot Unavailable", alert_text_2, AlertStatus.normal,
+    super().__init__("ezpilot Unavailable", alert_text_2, AlertStatus.normal,
                      AlertSize.mid, Priority.LOW, visual_alert,
                      AudibleAlert.refuse, 3.)
 
@@ -154,7 +154,7 @@ class SoftDisableAlert(Alert):
 class UserSoftDisableAlert(SoftDisableAlert):
   def __init__(self, alert_text_2: str):
     super().__init__(alert_text_2),
-    self.alert_text_1 = "bukapilot will disengage"
+    self.alert_text_1 = "ezpilot will disengage"
 
 
 class ImmediateDisableAlert(Alert):
@@ -315,7 +315,7 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
   },
 
   EventName.cruiseMismatch: {
-    #ET.PERMANENT: ImmediateDisableAlert("bukapilot failed to cancel cruise"),
+    #ET.PERMANENT: ImmediateDisableAlert("ezpilot failed to cancel cruise"),
   },
 
   # openpilot doesn't recognize the car. This switches openpilot into a
@@ -811,7 +811,7 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
   # When this happens we can no long control the car so the user needs to be warned immediately.
   EventName.cruiseDisabled: {
     ET.IMMEDIATE_DISABLE: Alert(
-      "bukapilot Canceled",
+      "ezpilot Canceled",
       "Cruise is Off",
       AlertStatus.normal, AlertSize.mid,
       Priority.HIGH, VisualAlert.none, AudibleAlert.disengage, 3.),
@@ -837,7 +837,7 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
 
   EventName.noTarget: {
     ET.IMMEDIATE_DISABLE: Alert(
-      "bukapilot Canceled",
+      "ezpilot Canceled",
       "No close lead car",
       AlertStatus.normal, AlertSize.mid,
       Priority.HIGH, VisualAlert.none, AudibleAlert.disengage, 3.),
@@ -846,7 +846,7 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
 
   EventName.speedTooLow: {
     ET.IMMEDIATE_DISABLE: Alert(
-      "bukapilot Canceled",
+      "ezpilot Canceled",
       "Speed too low",
       AlertStatus.normal, AlertSize.mid,
       Priority.HIGH, VisualAlert.none, AudibleAlert.disengage, 3.),

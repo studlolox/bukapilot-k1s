@@ -187,12 +187,12 @@ OffroadHome::OffroadHome(QWidget* parent) : QFrame(parent) {
   auto qr = new QWidget(this);
   qr->setAttribute(Qt::WA_StyledBackground);
   auto qr_layout = new QHBoxLayout(qr);
-  auto qr_label = new QLabel("Pair your device with KommuApp by scanning the QR code to view drive data.");
-  qr_label->setStyleSheet("font-size: 50px; padding: 15px;");
+  auto qr_label = new QLabel("ezpilot K1S Edition\nScan to view documentation and updates.");
+  qr_label->setStyleSheet("font-size: 45px; padding: 15px;");
   qr_label->setWordWrap(true);
   qr_label->setMaximumWidth(650);
   qr_layout->addWidget(qr_label);
-  auto qr_code = new QrWidget("https://onelink.to/kommuapp", this);
+  auto qr_code = new QrWidget("https://github.com/studlolox/bukapilot-k1s", this);
   qr_code->setFixedSize(300, 300);
   qr_layout->addWidget(qr_code);
   main_layout->addWidget(qr, 0, 1, 1, 2);

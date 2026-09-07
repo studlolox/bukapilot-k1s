@@ -14,7 +14,7 @@ QString getVersion() {
 }
 
 QString getBrand() {
-  return Params().getBool("Passive") ? "dashcam" : "bukapilot";
+  return Params().getBool("Passive") ? "dashcam" : "ezpilot";
 }
 
 QString getBrandVersion() {
@@ -22,7 +22,7 @@ QString getBrandVersion() {
 }
 
 QString getUserAgent() {
-  return "bukapilot-" + getVersion();
+  return "ezpilot-" + getVersion();
 }
 
 std::optional<QString> getDongleId() {
