@@ -30,6 +30,9 @@ class OnroadHud : public QWidget {
   Q_PROPERTY(bool steerSaturated MEMBER steerSaturated NOTIFY valueChanged);
   Q_PROPERTY(int laneChangeDirection MEMBER laneChangeDirection NOTIFY valueChanged);
   Q_PROPERTY(bool wheelCritical MEMBER wheelCritical NOTIFY valueChanged);
+  Q_PROPERTY(int distanceBars MEMBER distanceBars NOTIFY valueChanged);
+  Q_PROPERTY(float leadDistance MEMBER leadDistance NOTIFY valueChanged);
+  Q_PROPERTY(bool hasLead MEMBER hasLead NOTIFY valueChanged);
 
 public:
   explicit OnroadHud(QWidget *parent);
@@ -39,6 +42,7 @@ public:
 private:
   void drawCapsule(QPainter &p, const QRect &rc);
   void drawSetSpeedBox(QPainter &p, const QRect &rc);
+  void drawDistanceBars(QPainter &p, int cx, int y, int bars, const QColor &active_color);
   void drawCurrentSpeed(QPainter &p, int cx, int y);
   void drawMiciSteeringWheel(QPainter &p, int cx, int cy, float angle, bool critical);
   void drawTorqueArcBar(QPainter &p, int cx, int cy, int arc_radius, float torque, bool saturated);
@@ -69,6 +73,9 @@ private:
   bool steerSaturated = false;
   int laneChangeDirection = 0;
   bool wheelCritical = false;
+  int distanceBars = 3;
+  float leadDistance = 0.0f;
+  bool hasLead = false;
   int thermalStatus = 0;
   bool is_cruise_set = false;
   bool engageable = false;

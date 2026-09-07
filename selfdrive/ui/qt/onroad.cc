@@ -244,6 +244,38 @@ void OnroadHud::updateState(const UIState &s) {
 
   bool critical = (cs.getAlertStatus() == cereal::ControlsState::AlertStatus::CRITICAL);
 
+  // Extract setDistance from cruiseState (1 = Aggressive, 2 = Normal, 3 = Chill, 4 = Auto)
+  int dist_bars = 3;
+  auto set_dist = sm["carState"].getCarState().getCruiseState().getSetDistance();
+  switch (set_dist) {
+    case cereal::CarState::CruiseState::SetDistance::AGGRESIVE:
+      dist_bars = 1;
+      break;
+    case cereal::CarState::CruiseState::SetDistance::NORMAL:
+      dist_bars = 2;
+      break;
+    case cereal::CarState::CruiseState::SetDistance::CHILL:
+      dist_bars = 3;
+      break;
+    case cereal::CarState::CruiseState::SetDistance::AUTO:
+      dist_bars = 4;
+      break;
+    default:
+      dist_bars = 3;
+      break;
+  }
+
+  // Extract lead vehicle tracking distance
+  float lead_dist = 0.0f;
+  bool lead_detected = false;
+  if (sm.alive("radarState") && sm.valid("radarState")) {
+    const auto lead_one = sm["radarState"].getRadarState().getLeadOne();
+    if (lead_one.getStatus()) {
+      lead_detected = true;
+      lead_dist = lead_one.getDRel();
+    }
+  }
+
   if (getenv("FORCE_ONROAD") != NULL && cur_speed == 0.0) {
     cur_speed = 78.0;
     maxspeed_str = "80";
@@ -257,6 +289,9 @@ void OnroadHud::updateState(const UIState &s) {
     saturated = false;
     lc_dir = 0;
     critical = false;
+    dist_bars = 3;
+    lead_detected = true;
+    lead_dist = 36.5f;
   }
 
   setProperty("is_cruise_set", cruise_set);
@@ -271,6 +306,9 @@ void OnroadHud::updateState(const UIState &s) {
   setProperty("steerSaturated", saturated);
   setProperty("laneChangeDirection", lc_dir);
   setProperty("wheelCritical", critical);
+  setProperty("distanceBars", dist_bars);
+  setProperty("leadDistance", lead_dist);
+  setProperty("hasLead", lead_detected);
   setProperty("thermalStatus", thermal_st);
   setProperty("hideDM", cs.getAlertSize() != cereal::ControlsState::AlertSize::NONE);
   setProperty("status", s.status);
@@ -290,8 +328,18 @@ void OnroadHud::manualMouseEvent(QMouseEvent *e) {
   auto const x = radius / 2 + (bdr_s * 2);
   auto const y = rect().bottom() - footer_h / 2;
   auto const w = img_size;
-  if (e->globalX() > x && e->globalY() > y && e->globalX() <= x + w && e->globalY() <= y + w)
-      emit openSettings();
+  if (e->globalX() > x && e->globalY() > y && e->globalX() <= x + w && e->globalY() <= y + w) {
+    emit openSettings();
+    return;
+  }
+
+  // Tap MAX Speed capsule to cycle distance gap (1 -> 2 -> 3 -> 1)
+  int set_speed_w = 200;
+  QRect max_rc(bdr_s * 2, bdr_s * 1.5, set_speed_w, 204);
+  if (max_rc.contains(e->pos())) {
+    int next_bars = (distanceBars % 3) + 1;
+    setProperty("distanceBars", next_bars);
+  }
 }
 
 void OnroadHud::drawCapsule(QPainter &p, const QRect &rc) {
@@ -317,16 +365,52 @@ void OnroadHud::drawSetSpeedBox(QPainter &p, const QRect &rc) {
 
   configFont(p, "Inter", 38, "SemiBold");
   p.setPen(max_color);
-  drawText(p, rc.center().x(), rc.top() + 48, "MAX", 255);
+  drawText(p, rc.center().x(), rc.top() + 44, "MAX", 255);
 
   if (is_cruise_set) {
-    configFont(p, "Inter", 88, "Bold");
-    p.setPen(QColor(255, 255, 255));
-    drawText(p, rc.center().x(), rc.top() + 142, maxSpeed, 255);
-  } else {
     configFont(p, "Inter", 82, "Bold");
+    p.setPen(QColor(255, 255, 255));
+    drawText(p, rc.center().x(), rc.top() + 124, maxSpeed, 255);
+  } else {
+    configFont(p, "Inter", 78, "Bold");
     p.setPen(QColor(114, 114, 114));
-    drawText(p, rc.center().x(), rc.top() + 142, "–", 200);
+    drawText(p, rc.center().x(), rc.top() + 124, "–", 200);
+  }
+
+  // Draw 3-bar distance gap indicator at bottom of card
+  drawDistanceBars(p, rc.center().x(), rc.bottom() - 22, distanceBars, max_color);
+}
+
+void OnroadHud::drawDistanceBars(QPainter &p, int cx, int y, int bars, const QColor &active_color) {
+  const int num_bars = 3;
+  const int bar_w = 34;
+  const int bar_h = 6;
+  const int spacing = 8;
+  const int total_w = num_bars * bar_w + (num_bars - 1) * spacing;
+  int start_x = cx - total_w / 2;
+
+  p.setPen(Qt::NoPen);
+
+  // If a lead vehicle is tracked, display distance in meters (e.g. "36m") just above the bars
+  if (hasLead && leadDistance > 0.5f) {
+    QString lead_str = QString::number(std::round(leadDistance)) + "m";
+    configFont(p, "Inter", 22, "SemiBold");
+    p.setPen(QColor(255, 255, 255, 180));
+    drawText(p, cx, y - 9, lead_str, 180);
+    p.setPen(Qt::NoPen);
+  }
+
+  for (int i = 0; i < num_bars; ++i) {
+    int bar_x = start_x + i * (bar_w + spacing);
+    QRect bar_rc(bar_x, y, bar_w, bar_h);
+
+    bool is_lit = (i < bars);
+    if (is_lit) {
+      p.setBrush(active_color);
+    } else {
+      p.setBrush(QColor(255, 255, 255, 45));
+    }
+    p.drawRoundedRect(bar_rc, 3, 3);
   }
 }
 
