@@ -67,6 +67,8 @@ def manager_init() -> None:
     ("IsRHD", "1"),
     ("LogVideoWifiOnly", "0"),
     ("RecordFront", "1"),
+    ("DisableUpload", "1"),
+    ("DisableVideoRecording", "0"),
     ("FanPwmOverride", "70.0"),
     ("PowerSaverEntryDuration", "360.0"),
     ("StoppingDistanceOffset", "0.0"),

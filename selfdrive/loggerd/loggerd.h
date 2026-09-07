@@ -68,7 +68,7 @@ const LogCameraInfo cameras_logged[] = {
     .has_qcamera = true,
     .trigger_rotate = true,
     .enable = true,
-    .record = true,
+    .record = !Params().getBool("DisableVideoRecording"),
   },
   {
     .type = DriverCam,

@@ -62,6 +62,12 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       "Enable upload of on-the-road driving footage via Wi-Fi only, mobile data will not be used for uploading driving footage.",
       "../assets/offroad/icon_road.png",
     },
+    {
+      "DisableVideoRecording",
+      "Disable Road Video Recording",
+      "Disable recording road camera footage to internal storage. Significantly reduces device temperature, power draw, and flash memory wear while preserving all driving assistance features.",
+      "../assets/offroad/icon_road.png",
+    },
   };
 
   Params params;

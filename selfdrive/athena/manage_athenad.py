@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import time
 from multiprocessing import Process
 
@@ -12,8 +13,12 @@ ATHENA_MGR_PID_PARAM = "AthenadPid"
 
 
 def main():
+  if not os.getenv("ATHENA_HOST"):
+    cloudlog.info("athena daemon disabled: no ATHENA_HOST configured")
+    return
+
   params = Params()
-  dongle_id = params.get("DongleId").decode('utf-8')
+  dongle_id = params.get("DongleId", encoding='utf-8')
   cloudlog.bind_global(dongle_id=dongle_id, version=get_version(), dirty=is_dirty())
 
   try:

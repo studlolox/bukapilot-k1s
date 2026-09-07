@@ -12,7 +12,6 @@ from cereal import log
 import cereal.messaging as messaging
 from common.api import Api
 from common.params import Params
-from common.kommu import *
 from selfdrive.hardware import TICI
 from selfdrive.loggerd.kommu import fia_upload
 from selfdrive.loggerd.xattr_cache import getxattr, setxattr
@@ -233,6 +232,16 @@ def uploader_fn(exit_event):
   while not exit_event.is_set():
     sm.update(0)
     offroad = params.get_bool("IsOffroad")
+
+    if params.get_bool("DisableUpload"):
+      uploader.last_speed = 0
+      uploader.immediate_size = 0
+      uploader.immediate_count = 0
+      pm.send("uploaderState", uploader.get_msg())
+      if allow_sleep:
+        time.sleep(60 if offroad else 5)
+      continue
+
     network_type = sm['deviceState'].networkType if not force_wifi else NetworkType.wifi
     if network_type == NetworkType.none:
       # Still check for the remaining upload size

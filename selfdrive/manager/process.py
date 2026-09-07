@@ -257,6 +257,9 @@ class DaemonProcess(ManagerProcess):
     pass
 
   def start(self) -> None:
+    if not self.enabled:
+      return
+
     params = Params()
     pid = params.get(self.param_name, encoding='utf-8')
 

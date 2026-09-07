@@ -53,7 +53,7 @@ void encoder_thread(LoggerdState *s, const LogCameraInfo &cam_info) {
     }
 
     // init encoders
-    if (encoders.empty()) {
+    if (encoders.empty() && cam_info.record) {
       VisionBuf buf_info = vipc_client.buffers[0];
       LOGD("encoder init %dx%d", buf_info.width, buf_info.height);
 
