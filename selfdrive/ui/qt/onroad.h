@@ -26,6 +26,10 @@ class OnroadHud : public QWidget {
   Q_PROPERTY(bool dmActive MEMBER dmActive NOTIFY valueChanged);
   Q_PROPERTY(bool hideDM MEMBER hideDM NOTIFY valueChanged);
   Q_PROPERTY(int status MEMBER status NOTIFY valueChanged);
+  Q_PROPERTY(float steerTorque MEMBER steerTorque NOTIFY valueChanged);
+  Q_PROPERTY(bool steerSaturated MEMBER steerSaturated NOTIFY valueChanged);
+  Q_PROPERTY(int laneChangeDirection MEMBER laneChangeDirection NOTIFY valueChanged);
+  Q_PROPERTY(bool wheelCritical MEMBER wheelCritical NOTIFY valueChanged);
 
 public:
   explicit OnroadHud(QWidget *parent);
@@ -34,7 +38,12 @@ public:
 
 private:
   void drawCapsule(QPainter &p, const QRect &rc);
-  void drawSteerWheel(QPainter &p, int cx, int cy, float angle, QColor color);
+  void drawSetSpeedBox(QPainter &p, const QRect &rc);
+  void drawCurrentSpeed(QPainter &p, int cx, int y);
+  void drawMiciSteeringWheel(QPainter &p, int cx, int cy, float angle, bool critical);
+  void drawTorqueArcBar(QPainter &p, int cx, int cy, int arc_radius, float torque, bool saturated);
+  void drawTurnIntent(QPainter &p, int cx, int cy, int dir);
+  void drawStatusCapsule(QPainter &p, const QRect &rc, const QString &label, const QString &val, const QColor &color);
   void drawActionBtn(QPainter &p, int x, int y, QPixmap &img, bool active);
   void drawIcon(QPainter &p, int x, int y, QPixmap &img, QBrush bg, float opacity);
   void drawText(QPainter &p, int x, int y, const QString &text, int alpha = 255);
@@ -43,6 +52,10 @@ private:
   QPixmap engage_img;
   QPixmap dm_img;
   QPixmap settings_img;
+  QPixmap wheel_img;
+  QPixmap wheel_critical_img;
+  QPixmap turn_intent_img;
+  QPixmap exclamation_img;
   const int radius = 192;
   const int img_size = (radius / 2) * 1.5;
   QString speed;
@@ -52,6 +65,10 @@ private:
   float steerAngleDeg = 0.0f;
   bool steerOverride = false;
   bool lateralActive = false;
+  float steerTorque = 0.0f;
+  bool steerSaturated = false;
+  int laneChangeDirection = 0;
+  bool wheelCritical = false;
   int thermalStatus = 0;
   bool is_cruise_set = false;
   bool engageable = false;

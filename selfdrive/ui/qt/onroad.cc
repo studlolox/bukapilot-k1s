@@ -173,6 +173,10 @@ void OnroadAlerts::paintEvent(QPaintEvent *event) {
 OnroadHud::OnroadHud(QWidget *parent) : QWidget(parent) {
   dm_img = loadPixmap("../assets/img_driver_face.png", {img_size, img_size});
   settings_img = loadPixmap("../assets/kommu/settings.png", {img_size, img_size});
+  wheel_img = loadPixmap("../assets/icons_mici/wheel.png", {80, 80});
+  wheel_critical_img = loadPixmap("../assets/icons_mici/wheel_critical.png", {80, 80});
+  turn_intent_img = loadPixmap("../assets/icons_mici/turn_intent_left.png", {38, 38});
+  exclamation_img = loadPixmap("../assets/icons_mici/exclamation_point.png", {12, 44});
 
   connect(this, &OnroadHud::valueChanged, [=] { update(); });
 }
@@ -187,9 +191,9 @@ void OnroadHud::updateState(const UIState &s) {
   if (cruise_set && !s.scene.is_metric) {
     maxspeed *= KM_TO_MILE;
   }
-  QString maxspeed_str = cruise_set ? QString::number(std::nearbyint(maxspeed)) : "N/A";
+  QString maxspeed_str = cruise_set ? QString::number(std::nearbyint(maxspeed)) : "–";
   float cur_speed_hud = sm["carState"].getCarState().getVEgoCluster();
-  float cur_speed =  (cur_speed_hud == 0.0) ? sm["carState"].getCarState().getVEgo() : cur_speed_hud;
+  float cur_speed = (cur_speed_hud == 0.0) ? sm["carState"].getCarState().getVEgo() : cur_speed_hud;
   cur_speed = std::max(0.0, cur_speed * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH));
   float temp = sm["deviceState"].getDeviceState().getAmbientTempC() * (s.scene.is_metric ? 1 : 1.8);
   temp += s.scene.is_metric ? 0 : 32;
@@ -198,6 +202,47 @@ void OnroadHud::updateState(const UIState &s) {
   bool steer_override = sm["carState"].getCarState().getSteeringPressed();
   bool lat_active = cs.getEnabled();
   int thermal_st = (int)sm["deviceState"].getDeviceState().getThermalStatus();
+
+  // Extract torque output and saturation from lateralControlState
+  float cur_torque = 0.0f;
+  bool saturated = false;
+  const auto lcs = cs.getLateralControlState();
+  switch (lcs.which()) {
+    case cereal::ControlsState::LateralControlState::PID_STATE:
+      cur_torque = lcs.getPidState().getOutput();
+      saturated = lcs.getPidState().getSaturated();
+      break;
+    case cereal::ControlsState::LateralControlState::INDI_STATE:
+      cur_torque = lcs.getIndiState().getOutput();
+      saturated = lcs.getIndiState().getSaturated();
+      break;
+    case cereal::ControlsState::LateralControlState::LQR_STATE:
+      cur_torque = lcs.getLqrState().getOutput();
+      saturated = lcs.getLqrState().getSaturated();
+      break;
+    case cereal::ControlsState::LateralControlState::ANGLE_STATE:
+      cur_torque = lcs.getAngleState().getOutput();
+      saturated = lcs.getAngleState().getSaturated();
+      break;
+    default:
+      break;
+  }
+
+  // Extract turn intent / lane change direction from lateralPlan
+  int lc_dir = 0;
+  if (sm.alive("lateralPlan") && sm.valid("lateralPlan")) {
+    const auto lp = sm["lateralPlan"].getLateralPlan();
+    if (lp.getLaneChangeState() != cereal::LateralPlan::LaneChangeState::OFF) {
+      const auto dir = lp.getLaneChangeDirection();
+      if (dir == cereal::LateralPlan::LaneChangeDirection::LEFT) {
+        lc_dir = 1;
+      } else if (dir == cereal::LateralPlan::LaneChangeDirection::RIGHT) {
+        lc_dir = 2;
+      }
+    }
+  }
+
+  bool critical = (cs.getAlertStatus() == cereal::ControlsState::AlertStatus::CRITICAL);
 
   if (getenv("FORCE_ONROAD") != NULL && cur_speed == 0.0) {
     cur_speed = 78.0;
@@ -208,6 +253,10 @@ void OnroadHud::updateState(const UIState &s) {
     steer_override = false;
     lat_active = true;
     thermal_st = 0;
+    cur_torque = 0.38f;
+    saturated = false;
+    lc_dir = 0;
+    critical = false;
   }
 
   setProperty("is_cruise_set", cruise_set);
@@ -218,6 +267,10 @@ void OnroadHud::updateState(const UIState &s) {
   setProperty("steerAngleDeg", steer_angle);
   setProperty("steerOverride", steer_override);
   setProperty("lateralActive", lat_active);
+  setProperty("steerTorque", cur_torque);
+  setProperty("steerSaturated", saturated);
+  setProperty("laneChangeDirection", lc_dir);
+  setProperty("wheelCritical", critical);
   setProperty("thermalStatus", thermal_st);
   setProperty("hideDM", cs.getAlertSize() != cereal::ControlsState::AlertSize::NONE);
   setProperty("status", s.status);
@@ -242,33 +295,133 @@ void OnroadHud::manualMouseEvent(QMouseEvent *e) {
 }
 
 void OnroadHud::drawCapsule(QPainter &p, const QRect &rc) {
-  p.setPen(QPen(QColor(255, 255, 255, 45), 2));
-  p.setBrush(QColor(18, 22, 30, 180));
-  p.drawRoundedRect(rc, 24, 24);
+  p.setPen(QPen(QColor(255, 255, 255, 75), 5));
+  p.setBrush(QColor(0, 0, 0, 166));
+  p.drawRoundedRect(rc, 32, 32);
 }
 
-void OnroadHud::drawSteerWheel(QPainter &p, int cx, int cy, float angle, QColor color) {
+void OnroadHud::drawSetSpeedBox(QPainter &p, const QRect &rc) {
+  drawCapsule(p, rc);
+
+  // Exact release-mici MAX colors: ENGAGED = #80D8A6, OVERRIDE/DISENGAGED = #919B95, UNSET = #A6A6A6
+  QColor max_color = QColor(166, 166, 166);
+  if (is_cruise_set) {
+    if (status == STATUS_ENGAGED) {
+      max_color = QColor(128, 216, 166);
+    } else if (status == STATUS_WARNING || steerOverride) {
+      max_color = QColor(245, 158, 11);
+    } else {
+      max_color = QColor(145, 155, 149);
+    }
+  }
+
+  configFont(p, "Inter", 38, "SemiBold");
+  p.setPen(max_color);
+  drawText(p, rc.center().x(), rc.top() + 48, "MAX", 255);
+
+  if (is_cruise_set) {
+    configFont(p, "Inter", 88, "Bold");
+    p.setPen(QColor(255, 255, 255));
+    drawText(p, rc.center().x(), rc.top() + 142, maxSpeed, 255);
+  } else {
+    configFont(p, "Inter", 82, "Bold");
+    p.setPen(QColor(114, 114, 114));
+    drawText(p, rc.center().x(), rc.top() + 142, "–", 200);
+  }
+}
+
+void OnroadHud::drawCurrentSpeed(QPainter &p, int cx, int y) {
+  configFont(p, "Inter", 176, "Bold");
+  p.setPen(QColor(255, 255, 255));
+  drawText(p, cx, y, speed, 255);
+
+  configFont(p, "Inter", 54, "Medium");
+  p.setPen(QColor(255, 255, 255, 200));
+  drawText(p, cx, y + 80, speedUnit, 200);
+}
+
+void OnroadHud::drawTorqueArcBar(QPainter &p, int cx, int cy, int arc_radius, float torque, bool saturated) {
+  QRectF arcRect(cx - arc_radius, cy - arc_radius, arc_radius * 2, arc_radius * 2);
+
+  // Background subtle track (top 140° arc, centered at 90° / 12 o'clock)
+  const int fullSpanDeg = 140;
+  int bgStart = (90 + fullSpanDeg / 2) * 16;
+  int bgSpan = -fullSpanDeg * 16;
+
+  p.setBrush(Qt::NoBrush);
+  p.setPen(QPen(QColor(255, 255, 255, 45), 5, Qt::SolidLine, Qt::RoundCap));
+  p.drawArc(arcRect, bgStart, bgSpan);
+
+  // Center reference tick
+  p.setPen(QPen(QColor(255, 255, 255, 120), 3, Qt::SolidLine, Qt::RoundCap));
+  p.drawArc(arcRect, 90 * 16 - 8, 16);
+
+  // Active torque sweep: sweeps from 90° (top) toward left or right
+  float clamped = std::clamp(torque, -1.0f, 1.0f);
+  if (std::abs(clamped) > 0.02f) {
+    float sweepAngle = -clamped * (fullSpanDeg / 2.0f);
+    int activeStart = 90 * 16;
+    int activeSpan = (int)std::round(sweepAngle * 16.0f);
+
+    QColor torqueColor = QColor(255, 255, 255, 230);
+    float absTorque = std::abs(clamped);
+    if (saturated || absTorque > 0.85f) {
+      torqueColor = QColor(248, 113, 113); // alert coral
+    } else if (absTorque > 0.60f) {
+      torqueColor = QColor(245, 158, 11);  // amber warning
+    } else if (lateralActive) {
+      torqueColor = QColor(128, 216, 166); // mint green
+    }
+
+    p.setPen(QPen(torqueColor, 6, Qt::SolidLine, Qt::RoundCap));
+    p.drawArc(arcRect, activeStart, activeSpan);
+  }
+}
+
+void OnroadHud::drawMiciSteeringWheel(QPainter &p, int cx, int cy, float angle, bool critical) {
   p.save();
   p.translate(cx, cy);
-  p.rotate(angle);
+  p.rotate(-angle);
 
-  // Outer steering ring
-  p.setPen(QPen(color, 3, Qt::SolidLine, Qt::RoundCap));
-  p.setBrush(Qt::NoBrush);
-  p.drawEllipse(-18, -18, 36, 36);
-
-  // Center hub
-  p.setBrush(color);
-  p.setPen(Qt::NoPen);
-  p.drawEllipse(-4, -4, 8, 8);
-
-  // Spokes (left, right, bottom)
-  p.setPen(QPen(color, 2.5, Qt::SolidLine, Qt::RoundCap));
-  p.drawLine(-17, 0, -4, 0);
-  p.drawLine(4, 0, 17, 0);
-  p.drawLine(0, 4, 0, 17);
-
+  const QPixmap &wheel = critical ? wheel_critical_img : wheel_img;
+  if (!wheel.isNull()) {
+    p.setOpacity(lateralActive ? 1.0 : (status == STATUS_DISENGAGED ? 0.45 : 0.85));
+    p.drawPixmap(-wheel.width() / 2, -wheel.height() / 2, wheel);
+    p.setOpacity(1.0);
+  }
   p.restore();
+
+  // Exclamation mark if critical
+  if (critical && !exclamation_img.isNull()) {
+    p.drawPixmap(cx + 42, cy - exclamation_img.height() / 2, exclamation_img);
+  }
+}
+
+void OnroadHud::drawTurnIntent(QPainter &p, int cx, int cy, int dir) {
+  if (dir == 0 || turn_intent_img.isNull()) return;
+
+  p.save();
+  if (dir == 1) { // Left
+    p.translate(cx - 56, cy);
+    p.drawPixmap(-turn_intent_img.width() / 2, -turn_intent_img.height() / 2, turn_intent_img);
+  } else if (dir == 2) { // Right (mirrored horizontally)
+    p.translate(cx + 56, cy);
+    p.scale(-1, 1);
+    p.drawPixmap(-turn_intent_img.width() / 2, -turn_intent_img.height() / 2, turn_intent_img);
+  }
+  p.restore();
+}
+
+void OnroadHud::drawStatusCapsule(QPainter &p, const QRect &rc, const QString &label, const QString &val, const QColor &color) {
+  drawCapsule(p, rc);
+
+  configFont(p, "Inter", 38, "SemiBold");
+  p.setPen(QColor(166, 166, 166));
+  drawText(p, rc.center().x(), rc.top() + 48, label, 255);
+
+  configFont(p, "Inter", 64, "Bold");
+  p.setPen(color);
+  drawText(p, rc.center().x(), rc.top() + 142, val, 255);
 }
 
 void OnroadHud::drawActionBtn(QPainter &p, int x, int y, QPixmap &img, bool active) {
@@ -284,71 +437,59 @@ void OnroadHud::paintEvent(QPaintEvent *event) {
   QPainter p(this);
   p.setRenderHint(QPainter::Antialiasing);
 
-  // Smooth cinematic header gradient
-  QLinearGradient bg(0, 0, 0, header_h);
-  bg.setColorAt(0, QColor(0, 0, 0, 160));
-  bg.setColorAt(0.65, QColor(0, 0, 0, 60));
+  // 1. Release-mici header vertical gradient (300px)
+  QLinearGradient bg(0, 0, 0, 320);
+  bg.setColorAt(0, QColor(0, 0, 0, 150));
+  bg.setColorAt(0.65, QColor(0, 0, 0, 65));
   bg.setColorAt(1, QColor(0, 0, 0, 0));
-  p.fillRect(0, 0, width(), header_h, bg);
+  p.fillRect(0, 0, width(), 320, bg);
 
-  // 1. MAX Speed capsule (top-left)
-  QRect rc(bdr_s * 2, bdr_s * 1.5, 184, 202);
-  drawCapsule(p, rc);
+  // 2. MAX Speed box (top-left) - 200x204
+  int set_speed_w = 200;
+  QRect max_rc(bdr_s * 2, bdr_s * 1.5, set_speed_w, 204);
+  drawSetSpeedBox(p, max_rc);
 
-  configFont(p, "Inter", 36, "Medium");
-  drawText(p, rc.center().x(), 95, "MAX", 220);
-  if (is_cruise_set) {
-    configFont(p, "Inter", 82, "Bold");
-    drawText(p, rc.center().x(), 182, maxSpeed, 255);
-  } else {
-    configFont(p, "Inter", 74, "SemiBold");
-    drawText(p, rc.center().x(), 182, maxSpeed, 100);
-  }
-
-  // 2. Real-time STEER Gauge capsule (next to MAX speed)
-  QRect steer_rc(bdr_s * 2 + 184 + 20, bdr_s * 1.5, 184, 202);
+  // 3. STEER & TORQUE Gauge box (next to MAX speed) - 200x204
+  QRect steer_rc(bdr_s * 2 + set_speed_w + 24, bdr_s * 1.5, set_speed_w, 204);
   drawCapsule(p, steer_rc);
 
-  configFont(p, "Inter", 36, "Medium");
-  drawText(p, steer_rc.center().x(), 95, "STEER", 220);
+  configFont(p, "Inter", 38, "SemiBold");
+  QColor steer_lbl_col = lateralActive ? QColor(128, 216, 166) : (steerOverride ? QColor(245, 158, 11) : QColor(166, 166, 166));
+  p.setPen(steer_lbl_col);
+  drawText(p, steer_rc.center().x(), steer_rc.top() + 48, "STEER", 255);
 
-  QColor steer_col = QColor(226, 232, 240);
-  if (steerOverride) {
-    steer_col = QColor(245, 158, 11);       // Amber on override
-  } else if (lateralActive) {
-    steer_col = QColor(16, 185, 129);       // Emerald when auto-steering
-  }
-  drawSteerWheel(p, steer_rc.center().x(), 136, steerAngleDeg, steer_col);
+  // Draw dynamic torque arc bar around wheel
+  int wheel_cx = steer_rc.center().x();
+  int wheel_cy = steer_rc.top() + 115;
+  drawTorqueArcBar(p, wheel_cx, wheel_cy, 46, steerTorque, steerSaturated);
 
+  // Draw release-mici rotating steering wheel
+  drawMiciSteeringWheel(p, wheel_cx, wheel_cy, steerAngleDeg, wheelCritical);
+
+  // Draw lane change turn intent indicator
+  drawTurnIntent(p, wheel_cx, wheel_cy, laneChangeDirection);
+
+  // Digital angle below wheel
   QString angle_str = (steerAngleDeg > 0.0f ? "+" : "") + QString::number(std::round(steerAngleDeg)) + "°";
-  configFont(p, "Inter", 42, "SemiBold");
-  p.setPen(steer_col);
-  drawText(p, steer_rc.center().x(), 205, angle_str, 255);
+  configFont(p, "Inter", 32, "SemiBold");
+  p.setPen(steer_lbl_col);
+  drawText(p, wheel_cx, steer_rc.bottom() - 14, angle_str, 255);
 
-  // 3. Current Speed (center)
-  configFont(p, "Inter", 180, "Bold");
-  drawText(p, rect().center().x(), 200, speed);
-  configFont(p, "Inter", 44, "Medium");
-  drawText(p, rect().center().x(), 265, speedUnit, 200);
+  // 4. Current Speed (top-center)
+  drawCurrentSpeed(p, rect().center().x(), 180);
 
-  // 4. TEMP capsule (top-right)
-  QRect temp_rc(rect().right() - bdr_s * 2 - 184, bdr_s * 1.5, 184, 202);
-  drawCapsule(p, temp_rc);
-
-  configFont(p, "Inter", 36, "Medium");
-  drawText(p, temp_rc.center().x(), 95, "TEMP", 220);
-
+  // 5. TEMP / Status capsule (top-right) - 180x204
+  int temp_w = 180;
+  QRect temp_rc(rect().right() - bdr_s * 2 - temp_w, bdr_s * 1.5, temp_w, 204);
   QColor temp_col = QColor(240, 243, 246);
   if (thermalStatus == (int)cereal::DeviceState::ThermalStatus::YELLOW) {
-    temp_col = QColor(251, 191, 36);        // Amber warning
+    temp_col = QColor(251, 191, 36);
   } else if (thermalStatus >= (int)cereal::DeviceState::ThermalStatus::RED) {
-    temp_col = QColor(248, 113, 113);       // Coral alert
+    temp_col = QColor(248, 113, 113);
   }
-  configFont(p, "Inter", 64, "Bold");
-  p.setPen(temp_col);
-  drawText(p, temp_rc.center().x(), 182, temperature, 255);
+  drawStatusCapsule(p, temp_rc, "TEMP", temperature, temp_col);
 
-  // 5. Bottom floating action discs (DM & Settings)
+  // 6. Bottom floating action discs (DM & Settings)
   if (!hideDM) {
     drawActionBtn(p, rect().right() - radius / 2 - (bdr_s * 2), rect().bottom() - footer_h / 2,
                   dm_img, dmActive);
