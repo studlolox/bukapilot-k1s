@@ -74,6 +74,8 @@ def manager_init() -> None:
     ("PowerSaverEntryDuration", "360.0"),
     ("StoppingDistanceOffset", "0.0"),
     ("DrivePathOffset", "0.0"),
+    ("UseStockAcc", "0"),
+    ("DisableRadar", "0"),
   ]
   if not PC:
     default_params.append(("LastUpdateTime", datetime.datetime.utcnow().isoformat().encode('utf8')))
@@ -81,8 +83,7 @@ def manager_init() -> None:
   if params.get_bool("RecordFrontLock"):
     params.put_bool("RecordFront", True)
 
-  if not params.get_bool("DisableRadar_Allow"):
-    params.delete("DisableRadar")
+  params.put_bool("DisableRadar_Allow", True)
 
   # set unset params
   for k, v in default_params:
@@ -146,13 +147,7 @@ def manager_init() -> None:
     params.put("FeaturesDict", json.dumps(new_dict))
     Features().set_package("default")
 
-  '''
-  if Features().has("StockAcc"):
-    params.put_bool("StockAccToggle_Allow", True)
-  else:
-    params.put_bool("StockAccToggle_Allow", False)
-  '''
-  params.put_bool("StockAccToggle_Allow", False)
+  params.put_bool("StockAccToggle_Allow", True)
 
   # set dongle id
   reg_res = register(show_spinner=True)

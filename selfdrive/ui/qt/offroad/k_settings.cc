@@ -68,26 +68,21 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       "Disable recording road camera footage to internal storage. Significantly reduces device temperature, power draw, and flash memory wear while preserving all driving assistance features.",
       "../assets/offroad/icon_road.png",
     },
-  };
-
-  Params params;
-
-  if (params.getBool("DisableRadar_Allow")) {
-    toggles.push_back({
+    {
       "DisableRadar",
       "ezpilot Longitudinal Control",
       "ezpilot will disable the car's radar and will take over control of gas and brakes. Warning: this disables AEB!",
       "../assets/offroad/icon_speed_limit.png",
-    });
-  }
-  if (params.getBool("StockAccToggle_Allow")) {
-    toggles.push_back({
+    },
+    {
       "UseStockAcc",
       "Stock Longitudinal Control",
       "ezpilot will use the stock ACC instead of ezpilot's ACC.",
       "../assets/offroad/icon_speed_limit.png",
-    });
-  }
+    },
+  };
+
+  Params params;
 
 
   for (auto &[param, title, desc, icon] : toggles) {

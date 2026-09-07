@@ -13,6 +13,7 @@ from selfdrive.controls.lib.events import Events
 from selfdrive.controls.lib.vehicle_model import VehicleModel
 
 from common.features import Features
+from common.params import Params
 
 GearShifter = car.CarState.GearShifter
 SetDistance = car.CarState.CruiseState.SetDistance
@@ -36,8 +37,9 @@ class CarInterfaceBase(ABC):
     self.low_speed_alert = False
     self.silent_steer_warning = True
 
-    f = Features()
-    self.mads = f.has("StockAcc")
+    self.f = Features()
+    self.params = Params()
+    self.mads = self.f.has("StockAcc") or self.params.get_bool("UseStockAcc")
 
     if CarState is not None:
       self.CS = CarState(CP)
@@ -118,6 +120,9 @@ class CarInterfaceBase(ABC):
 
   def create_common_events(self, cs_out, extra_gears=None, pcm_enable=True):
     events = Events()
+
+    if self.frame % 50 == 0:
+      self.mads = self.f.has("StockAcc") or self.params.get_bool("UseStockAcc")
 
     if cs_out.doorOpen:
       events.add(EventName.doorOpen)

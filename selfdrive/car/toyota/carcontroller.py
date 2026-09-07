@@ -10,6 +10,7 @@ from opendbc.can.packer import CANPacker
 from common.realtime import DT_CTRL
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 from common.features import Features
+from common.params import Params
 
 # EPS faults if you apply torque while the steering rate is above 100deg/s for too long
 MAX_STEER_RATE = 100
@@ -67,11 +68,15 @@ class CarController():
     self.standstill_status = BrakingStatus.STANDSTILL_INIT
     self.min_standstill_accel = 0
 
-    f = Features()
-    self.force_use_stock_acc = f.has("StockAcc")
+    self.params = Params()
+    self.f = Features()
+    self.force_use_stock_acc = self.f.has("StockAcc") or self.params.get_bool("UseStockAcc")
 
   def update(self, enabled, active, CS, frame, actuators, pcm_cancel_cmd, hud_alert,
              left_line, right_line, lead, left_lane_depart, right_lane_depart):
+
+    if frame % 50 == 0:
+      self.force_use_stock_acc = self.f.has("StockAcc") or self.params.get_bool("UseStockAcc")
 
     ts = frame * DT_CTRL
     lat_active = active and abs(CS.out.steeringTorque) < MAX_USER_TORQUE
