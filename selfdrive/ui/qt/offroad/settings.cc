@@ -88,13 +88,36 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
   }
 
   for (auto &[param, title, desc, icon] : toggles) {
-    auto toggle = new ParamControl(param, title, desc, icon, this);
+    bool restart_req = (param == "OpenpilotEnabledToggle" || param == "IsLdwEnabled" ||
+                        param == "IsRHD" || param == "DisableRadar");
+    auto toggle = new ParamControl(param, title, desc, icon, this, restart_req);
     bool locked = params.getBool((param + "Lock").toStdString());
     toggle->setEnabled(!locked);
     if (!locked) {
-      connect(uiState(), &UIState::offroadTransition, toggle, &ParamControl::setEnabled);
+      unlocked_toggles.push_back(toggle);
     }
     addItem(toggle);
+  }
+
+  connect(uiState(), &UIState::uiUpdate, this, &TogglesPanel::updateState);
+}
+
+void TogglesPanel::showEvent(QShowEvent *event) {
+  bool car_moving = uiState()->carMoving();
+  car_moving_prev = car_moving;
+  for (auto toggle : unlocked_toggles) {
+    toggle->setEnabled(!car_moving);
+  }
+  ListWidget::showEvent(event);
+}
+
+void TogglesPanel::updateState(const UIState &s) {
+  bool car_moving = s.carMoving();
+  if (car_moving != car_moving_prev) {
+    car_moving_prev = car_moving;
+    for (auto toggle : unlocked_toggles) {
+      toggle->setEnabled(!car_moving);
+    }
   }
 }
 

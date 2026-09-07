@@ -24,85 +24,95 @@
 #include "selfdrive/ui/qt/qt_window.h"
 
 TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
-  // param, title, desc, icon
-  std::vector<std::tuple<QString, QString, QString, QString>> toggles{
+  // param, title, desc, icon, restart_required
+  std::vector<std::tuple<QString, QString, QString, QString, bool>> toggles{
     {
       "OpenpilotEnabledToggle",
       "Enable ezpilot",
       "Use the ezpilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature. Changing this setting takes effect when the car is powered off.",
       "../assets/kommu/icon_ezpilot.png",
+      true,
     },
     {
       "IsLdwEnabled",
       "Enable Lane Departure Warnings",
       "Receive alerts to steer back into the lane when your vehicle drifts over a detected lane line without a turn signal activated while driving over 31 mph (50 km/h).",
       "../assets/kommu/icon_warning.png",
+      true,
     },
     {
       "IsAlcEnabled",
       "Enable Assisted Lane Change",
       "Assisted Lane Change will assist your vehicle in a single lane change when a steering nudge and the vehicle's signal lights are turned on. This features works over 31mph (50 km/h).",
       "../assets/kommu/icon_ezpilot.png",
+      true,
     },
     {
       "IsRHD",
       "Enable Right-Hand Drive",
       "Allow ezpilot to obey left-hand traffic conventions and perform driver monitoring on right driver seat.",
       "../assets/kommu/icon_ezpilot_mirrored.png",
+      true,
     },
     {
       "QuietMode",
       "Quiet Mode",
       "Receive only safety critical alerts.",
       "../assets/kommu/quiet_mode.png",
+      false,
     },
     {
       "LogVideoWifiOnly",
       "Upload Drive Video via Wi-Fi Only",
       "Enable upload of on-the-road driving footage via Wi-Fi only, mobile data will not be used for uploading driving footage.",
       "../assets/offroad/icon_road.png",
+      false,
     },
     {
       "DisableVideoRecording",
       "Disable Road Video Recording",
       "Disable recording road camera footage to internal storage. Significantly reduces device temperature, power draw, and flash memory wear while preserving all driving assistance features.",
       "../assets/offroad/icon_road.png",
+      true,
     },
     {
       "DisableRadar",
       "ezpilot Longitudinal Control",
       "ezpilot will disable the car's radar and will take over control of gas and brakes. Warning: this disables AEB!",
       "../assets/offroad/icon_speed_limit.png",
+      true,
     },
     {
       "UseStockAcc",
       "Stock Longitudinal Control",
       "ezpilot will use the stock ACC instead of ezpilot's ACC.",
       "../assets/offroad/icon_speed_limit.png",
+      false,
     },
     {
       "ResumeWithRes",
       "Resume from Stop with RES+",
       "Require pressing the steering wheel RES+ button or tapping the accelerator to resume driving from a complete stop. When disabled, the car automatically resumes when the vehicle ahead moves.",
       "../assets/offroad/icon_speed_limit.png",
+      false,
     },
     {
       "ScreenOffDriving",
       "Screen Off While Driving",
       "Turn off the screen after 15 seconds of driving with no interaction. The screen automatically wakes up when tapped or when a driving alert occurs.",
       "../assets/offroad/icon_shell.png",
+      false,
     },
   };
 
   Params params;
 
-
-  for (auto &[param, title, desc, icon] : toggles) {
-    auto toggle = new ParamControl(param, title, desc, icon, this);
+  for (auto &[param, title, desc, icon, restart_req] : toggles) {
+    auto toggle = new ParamControl(param, title, desc, icon, this, restart_req);
     bool locked = params.getBool((param + "Lock").toStdString());
     toggle->setEnabled(!locked);
     if (!locked) {
-      connect(uiState(), &UIState::offroadTransition, toggle, &ParamControl::setEnabled);
+      unlocked_toggles.push_back(toggle);
     }
     addItem(toggle);
   }
@@ -117,9 +127,30 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
   bool dm_locked = params.getBool("IgnoreDMLock");
   dm_toggle->setEnabled(!dm_locked);
   if (!dm_locked) {
-    connect(uiState(), &UIState::offroadTransition, dm_toggle, &ToggleControl::setEnabled);
+    unlocked_toggles.push_back(dm_toggle);
   }
   addItem(dm_toggle);
+
+  connect(uiState(), &UIState::uiUpdate, this, &TogglesPanel::updateState);
+}
+
+void TogglesPanel::showEvent(QShowEvent *event) {
+  bool car_moving = uiState()->carMoving();
+  car_moving_prev = car_moving;
+  for (auto toggle : unlocked_toggles) {
+    toggle->setEnabled(!car_moving);
+  }
+  ListWidget::showEvent(event);
+}
+
+void TogglesPanel::updateState(const UIState &s) {
+  bool car_moving = s.carMoving();
+  if (car_moving != car_moving_prev) {
+    car_moving_prev = car_moving;
+    for (auto toggle : unlocked_toggles) {
+      toggle->setEnabled(!car_moving);
+    }
+  }
 }
 
 DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
@@ -284,18 +315,37 @@ PersonalisedPanel::PersonalisedPanel(QWidget* parent) : ListWidget(parent) {
   stopDistanceOffsetSb = new SpinboxControl("StoppingDistanceOffset","Stop Distance Offset", "The offset distance from the lead car the vehicle is meant to stop", "m", (double []){-2.0, 5.0, 0.1}, true);
   addItem(stopDistanceOffsetSb);
 
-  drivePathOffsetSb = new SpinboxControl("DrivePathOffset","Path Skew Offset", "The path offset from center of the lane. Perform positive offset if the vehicle is currently skewed left.", "m", (double []){-1.0, 1.0, 0.05}, false);
+  drivePathOffsetSb = new SpinboxControl("DrivePathOffset","Path Skew Offset", "The path offset from center of the lane. Perform positive offset if the vehicle is currently skewed left.", "m", (double []){-1.0, 1.0, 0.05}, true);
   addItem(drivePathOffsetSb);
 
   fanPwmOverrideSb = new SpinboxControl("FanPwmOverride","Fan Speed", "Note: Lowering the fan speed may reduce the overall fan noise but risk of device overheating.", "%", (double []){0, 100.0, 10.0}, false);
   addItem(fanPwmOverrideSb);
 
-  powerSaverEntryDurationSb = new SpinboxControl("PowerSaverEntryDuration","Device Poweroff", "Power saver entry duration after ignition is off.", "min", (double []){10, 720.0, 10.0}, true);
+  powerSaverEntryDurationSb = new SpinboxControl("PowerSaverEntryDuration","Device Poweroff", "Power saver entry duration after ignition is off.", "min", (double []){10, 720.0, 10.0}, false);
   addItem(powerSaverEntryDurationSb);
 
-  connect(uiState(), &UIState::offroadTransition, stopDistanceOffsetSb, &SpinboxControl::setEnabled);
-  connect(uiState(), &UIState::offroadTransition, drivePathOffsetSb, &SpinboxControl::setEnabled);
+  connect(uiState(), &UIState::uiUpdate, this, &PersonalisedPanel::updateState);
+}
 
+void PersonalisedPanel::showEvent(QShowEvent *event) {
+  bool car_moving = uiState()->carMoving();
+  car_moving_prev = car_moving;
+  stopDistanceOffsetSb->setEnabled(!car_moving);
+  drivePathOffsetSb->setEnabled(!car_moving);
+  fanPwmOverrideSb->setEnabled(!car_moving);
+  powerSaverEntryDurationSb->setEnabled(!car_moving);
+  ListWidget::showEvent(event);
+}
+
+void PersonalisedPanel::updateState(const UIState &s) {
+  bool car_moving = s.carMoving();
+  if (car_moving != car_moving_prev) {
+    car_moving_prev = car_moving;
+    stopDistanceOffsetSb->setEnabled(!car_moving);
+    drivePathOffsetSb->setEnabled(!car_moving);
+    fanPwmOverrideSb->setEnabled(!car_moving);
+    powerSaverEntryDurationSb->setEnabled(!car_moving);
+  }
 }
 
 SoftwarePanel::SoftwarePanel(QWidget* parent) : ListWidget(parent) {

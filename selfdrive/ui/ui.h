@@ -121,6 +121,12 @@ public:
   inline bool engaged() const {
     return scene.started && (*sm)["controlsState"].getControlsState().getEnabled();
   };
+  inline bool carMoving() const {
+    if (!scene.started) return false;
+    if (!sm->alive("carState")) return false;
+    auto cs = (*sm)["carState"].getCarState();
+    return cs.getVEgo() > 0.1f || !cs.getStandstill();
+  };
 
   int fb_w = 0, fb_h = 0;
 

@@ -9,6 +9,8 @@
 #include <QLineEdit>
 
 #include "selfdrive/common/params.h"
+#include "selfdrive/ui/ui.h"
+#include "selfdrive/ui/qt/widgets/input.h"
 #include "selfdrive/ui/qt/widgets/toggle.h"
 
 QFrame *horizontal_line(QWidget *parent = nullptr);
@@ -83,6 +85,9 @@ public slots:
   void alertRebootRequired() {
     if (reboot_required) {
       this->setTitle("(Reboot Required)");
+      if (uiState()->scene.started) {
+        ConfirmationDialog::alert("Need to restart for setting to take effect", this);
+      }
     }
   };
   void setParams(double param_value) {
@@ -146,10 +151,15 @@ class ParamControl : public ToggleControl {
   Q_OBJECT
 
 public:
-  ParamControl(const QString &param, const QString &title, const QString &desc, const QString &icon, QWidget *parent = nullptr) : ToggleControl(title, desc, icon, false, parent) {
+  ParamControl(const QString &param, const QString &title, const QString &desc, const QString &icon,
+               QWidget *parent = nullptr, bool restart_required = false)
+      : ToggleControl(title, desc, icon, false, parent), restart_required(restart_required) {
     key = param.toStdString();
     QObject::connect(this, &ToggleControl::toggleFlipped, [=](bool state) {
       params.putBool(key, state);
+      if (this->restart_required && uiState()->scene.started) {
+        ConfirmationDialog::alert("Need to restart for setting to take effect", this);
+      }
     });
   }
 
@@ -160,6 +170,7 @@ public:
   };
 
 private:
+  bool restart_required;
   std::string key;
   Params params;
 };

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 #include <QButtonGroup>
 #include <QFileSystemWatcher>
 #include <QFrame>
@@ -69,17 +70,35 @@ class TogglesPanel : public ListWidget {
   Q_OBJECT
 public:
   explicit TogglesPanel(SettingsWindow *parent);
+
+protected:
+  void showEvent(QShowEvent *event) override;
+
+public slots:
+  void updateState(const UIState &s);
+
+private:
+  std::vector<ToggleControl *> unlocked_toggles;
+  bool car_moving_prev = false;
 };
 
 class PersonalisedPanel : public ListWidget {
   Q_OBJECT
 public:
   explicit PersonalisedPanel(QWidget* parent = nullptr);
+
+protected:
+  void showEvent(QShowEvent *event) override;
+
+public slots:
+  void updateState(const UIState &s);
+
 private:
   SpinboxControl *stopDistanceOffsetSb;
   SpinboxControl *drivePathOffsetSb;
   SpinboxControl *fanPwmOverrideSb;
   SpinboxControl *powerSaverEntryDurationSb;
+  bool car_moving_prev = false;
 };
 
 class ConfirmParamControl : public ToggleControl {
