@@ -171,7 +171,7 @@ class CarController():
       if pcm_cancel_cmd and CS.CP.carFingerprint in (CAR.LEXUS_IS, CAR.LEXUS_RC):
         can_sends.append(create_acc_cancel_command(self.packer))
       # Lexus 2018 no unplug DSU + using KommuActuator
-      elif CS.CP.carFingerprint in (CAR.LEXUS_NX):
+      elif CS.CP.carFingerprint == CAR.LEXUS_NX:
         if CS.out.standstill and (pcm_accel_cmd > 0):
           # Send a quick gas command to resume SNG
           can_sends.append(make_can_msg(512, b'\x01\x2F\x01\x2F\x00\x01\x00\x00', 0))

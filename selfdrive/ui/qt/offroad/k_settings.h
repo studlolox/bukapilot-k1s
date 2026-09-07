@@ -253,6 +253,7 @@ public:
         } else {
           Params().put("FixFingerprint", chosen);
         }
+        Params().remove("CarParamsCache");
         refreshLabel();
       }
     });

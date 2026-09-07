@@ -314,6 +314,15 @@ void OffroadHome::updateState(const UIState& s) {
   auto& sm = *(s.sm);
 
   // 1. Vehicle & System Status
+  std::string car_name = params.get("CarModel");
+  std::string fix_fp = params.get("FixFingerprint");
+  std::string display_name = !fix_fp.empty() ? fix_fp : (!car_name.empty() ? car_name : "TOYOTA COROLLA CROSS");
+
+  bool is_tss2 = (display_name.find("TSS") != std::string::npos ||
+                  display_name.find("CROSS") != std::string::npos ||
+                  display_name.find("COROLLA") != std::string::npos);
+  QString panda_suffix = is_tss2 ? " (TSS2)" : "";
+
   bool hasError = (s.scene.pandaType == cereal::PandaState::PandaType::UNKNOWN);
   bool initialising = hasSevereAlerts;
 
@@ -339,7 +348,7 @@ void OffroadHome::updateState(const UIState& s) {
       font-size: 24px;
       font-weight: 700;
     )");
-    panda_status_label->setText("● Panda Online (TSS2)");
+    panda_status_label->setText("● Panda Online" + panda_suffix);
     panda_status_label->setStyleSheet("font-size: 26px; font-weight: 500; color: #F59E0B; border: none; background: transparent;");
   } else {
     system_status_pill->setText("SYSTEM READY");
@@ -351,7 +360,7 @@ void OffroadHome::updateState(const UIState& s) {
       font-size: 26px;
       font-weight: 700;
     )");
-    panda_status_label->setText("● Panda Online (TSS2)");
+    panda_status_label->setText("● Panda Online" + panda_suffix);
     panda_status_label->setStyleSheet("font-size: 26px; font-weight: 500; color: #10B981; border: none; background: transparent;");
   }
 
@@ -366,10 +375,6 @@ void OffroadHome::updateState(const UIState& s) {
   }
 
   // Vehicle model display
-  std::string car_name = params.get("CarModel");
-  std::string fix_fp = params.get("FixFingerprint");
-  std::string display_name = !fix_fp.empty() ? fix_fp : (!car_name.empty() ? car_name : "TOYOTA COROLLA CROSS");
-
   if (display_name == "TOYOTA COROLLA CROSS HYBRID") {
     vehicle_title->setText("Corolla Cross Hybrid");
     vehicle_sub->setText("1.8L HEV • TSS 2.0 (No-DSU)");
