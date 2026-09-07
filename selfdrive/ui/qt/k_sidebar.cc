@@ -24,14 +24,6 @@ Sidebar::Sidebar(QWidget *parent) : QFrame(parent) {
   connect(alerts, &SidebarItem::clicked, this, &Sidebar::openAlerts);
   layout->addWidget(alerts);
 
-  auto training = new SidebarItem("Tutorial", "../assets/kommu/training.png", this);
-  connect(training, &SidebarItem::clicked, this, &Sidebar::openTraining);
-  layout->addWidget(training);
-
-  auto terms = new SidebarItem("T&C", "../assets/kommu/terms.png", this);
-  connect(terms, &SidebarItem::clicked, this, &Sidebar::openTerms);
-  layout->addWidget(terms);
-
   auto settings = new SidebarItem("Settings", "../assets/kommu/settings.png", this);
   connect(settings, &SidebarItem::clicked, this, &Sidebar::openSettings);
   layout->addWidget(settings);
