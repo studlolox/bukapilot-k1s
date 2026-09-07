@@ -27,6 +27,28 @@ Normal development happens on:
 
 ---
 
+### Primary Vehicle Target: Toyota Corolla Cross (TSS2)
+
+Active development and build focus in this repository is centered on the **Toyota Corolla Cross equipped with Toyota Safety Sense 2.0 (TSS2)**.
+
+Key guidelines for Corolla Cross TSS2 focus:
+- **Architecture & Bus Topology**:
+  - TSS2 / No-DSU architecture using DBCs `toyota_nodsu_pt_generated` and `toyota_tss2_adas`.
+  - Camera bus (bus 2 / ADAS) and Powertrain bus (bus 0 / PT) configuration via Panda.
+- **Lateral Control & EPS**:
+  - Parameters: Wheelbase 2.64 m, steer ratio 13.9, tire stiffness 0.444, lateral PID tuning (`LatTunes.PID_D`).
+  - Optimize steering torque limits and delta rates (`STEER_DELTA_UP`, `STEER_DELTA_DOWN`, `STEER_ERROR_MAX`) without triggering EPS cutoffs.
+  - Support stock LDA/LDP passthrough (`stockLdw` / `CS.out.stockAdas`).
+- **Longitudinal Control**:
+  - Support full stop-and-go (`stop_and_go = True`).
+  - Longitudinal tuning: `LongTunes.CROSS_HYBRID` / `LongTunes.TSS2` with smooth decel rate (0.3 m/s²).
+  - Robust handling of stock ACC passthrough (`StockAcc` / `CS.stock_acc_cmd`) vs openpilot longitudinal control.
+- **Fingerprinting & Firmware Identification**:
+  - Ensure robust identification of Corolla Cross EPS, Forward Camera, and Radar ECUs via FW queries, with clean fallback and `FixFingerprint` support for both Hybrid (`CAR.CROSSH_TSS2`) and Petrol variants.
+- **Other Platforms**: Code for non-Toyota platforms (e.g., Perodua, Proton, Honda) is secondary; changes must not compromise or regress Corolla Cross TSS2 stability, safety, or functionality.
+
+---
+
 # 2. Core Agent Principles
 
 The agent MUST prioritize:

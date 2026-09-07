@@ -43,6 +43,7 @@ class CAR:
   COROLLA_TSS2 = "TOYOTA COROLLA TSS2 2019"
   # LSS2 Lexus UX Hybrid is same as a TSS2 Corolla Hybrid
   COROLLAH_TSS2 = "TOYOTA COROLLA HYBRID TSS2 2019"
+  CROSS_TSS2 = "TOYOTA COROLLA CROSS"
   CROSSH_TSS2 = "TOYOTA COROLLA CROSS HYBRID"
   HIGHLANDER = "TOYOTA HIGHLANDER 2017"
   HIGHLANDER_TSS2 = "TOYOTA HIGHLANDER 2020"
@@ -199,6 +200,11 @@ FINGERPRINTS = {
   }],
   CAR.COROLLA_TSS2: [
   # malaysia 2019 corolla altis
+  {
+    36: 8, 37: 8, 170: 8, 180: 8, 186: 4, 401: 8, 426: 6, 452: 8, 464: 8, 466: 8, 467: 8, 544: 4, 550: 8, 552: 4, 562: 6, 608: 8, 610: 8, 643: 7, 705: 8, 728: 8, 740: 5, 742: 8, 743: 8, 761: 8, 765: 8, 800: 8, 810: 2, 812: 8, 830: 7, 835: 8, 836: 8, 865: 8, 869: 7, 870: 7, 871: 2, 877: 8, 881: 8, 885: 8, 896: 8, 898: 8, 918: 7, 921: 8, 944: 8, 945: 8, 951: 8, 955: 8, 956: 8, 976: 1, 987: 8, 1002: 8, 1014: 8, 1017: 8, 1020: 8, 1041: 8, 1042: 8, 1044: 8, 1056: 8, 1059: 1, 1082: 8, 1112: 8, 1114: 8, 1161: 8, 1162: 8, 1163: 8, 1172: 8, 1235: 8, 1237: 8, 1248: 8, 1279: 8, 1541: 8, 1552: 8, 1553: 8, 1556: 8, 1557: 8, 1568: 8, 1570: 8, 1571: 8, 1572: 8, 1592: 8, 1594: 8, 1595: 8, 1745: 8, 1775: 8, 1779: 8
+  }],
+  CAR.CROSS_TSS2: [
+  # malaysia 2021 corolla cross petrol (fallback)
   {
     36: 8, 37: 8, 170: 8, 180: 8, 186: 4, 401: 8, 426: 6, 452: 8, 464: 8, 466: 8, 467: 8, 544: 4, 550: 8, 552: 4, 562: 6, 608: 8, 610: 8, 643: 7, 705: 8, 728: 8, 740: 5, 742: 8, 743: 8, 761: 8, 765: 8, 800: 8, 810: 2, 812: 8, 830: 7, 835: 8, 836: 8, 865: 8, 869: 7, 870: 7, 871: 2, 877: 8, 881: 8, 885: 8, 896: 8, 898: 8, 918: 7, 921: 8, 944: 8, 945: 8, 951: 8, 955: 8, 956: 8, 976: 1, 987: 8, 1002: 8, 1014: 8, 1017: 8, 1020: 8, 1041: 8, 1042: 8, 1044: 8, 1056: 8, 1059: 1, 1082: 8, 1112: 8, 1114: 8, 1161: 8, 1162: 8, 1163: 8, 1172: 8, 1235: 8, 1237: 8, 1248: 8, 1279: 8, 1541: 8, 1552: 8, 1553: 8, 1556: 8, 1557: 8, 1568: 8, 1570: 8, 1571: 8, 1572: 8, 1592: 8, 1594: 8, 1595: 8, 1745: 8, 1775: 8, 1779: 8
   }],
@@ -1834,6 +1840,7 @@ DBC = {
   CAR.RAV4_TSS2_2022: dbc_dict('toyota_nodsu_pt_generated', None),
   CAR.COROLLA_TSS2: dbc_dict('toyota_nodsu_pt_generated', 'toyota_tss2_adas'),
   CAR.COROLLAH_TSS2: dbc_dict('toyota_nodsu_pt_generated', 'toyota_tss2_adas'),
+  CAR.CROSS_TSS2: dbc_dict('toyota_nodsu_pt_generated', 'toyota_tss2_adas'),
   CAR.CROSSH_TSS2: dbc_dict('toyota_nodsu_pt_generated', 'toyota_tss2_adas'),
   CAR.LEXUS_ES_TSS2: dbc_dict('toyota_nodsu_pt_generated', 'toyota_tss2_adas'),
   CAR.LEXUS_ESH_TSS2: dbc_dict('toyota_nodsu_pt_generated', 'toyota_tss2_adas'),
@@ -1857,7 +1864,7 @@ DBC = {
 EPS_SCALE = defaultdict(lambda: 73, {CAR.PRIUS: 66, CAR.COROLLA: 88, CAR.LEXUS_IS: 77, CAR.LEXUS_RC: 77, CAR.LEXUS_CTH: 100, CAR.PRIUS_V: 100})
 
 # Toyota/Lexus Safety Sense 2.0 and 2.5
-TSS2_CAR = {CAR.RAV4_TSS2, CAR.RAV4_TSS2_2022, CAR.COROLLA_TSS2, CAR.COROLLAH_TSS2, CAR.CROSSH_TSS2, CAR.LEXUS_ES_TSS2, CAR.LEXUS_ESH_TSS2, CAR.RAV4H_TSS2, CAR.RAV4H_TSS2_2022,
+TSS2_CAR = {CAR.RAV4_TSS2, CAR.RAV4_TSS2_2022, CAR.COROLLA_TSS2, CAR.COROLLAH_TSS2, CAR.CROSS_TSS2, CAR.CROSSH_TSS2, CAR.LEXUS_ES_TSS2, CAR.LEXUS_ESH_TSS2, CAR.RAV4H_TSS2, CAR.RAV4H_TSS2_2022,
             CAR.LEXUS_RX_TSS2, CAR.LEXUS_RXH_TSS2, CAR.HIGHLANDER_TSS2, CAR.HIGHLANDERH_TSS2, CAR.PRIUS_TSS2, CAR.CAMRY_TSS2, CAR.CAMRYH_TSS2,
             CAR.MIRAI, CAR.LEXUS_NX_TSS2, CAR.LEXUS_NXH_TSS2, CAR.ALPHARD_TSS2, CAR.AVALON_TSS2, CAR.AVALONH_TSS2, CAR.ALPHARDH_TSS2}
 

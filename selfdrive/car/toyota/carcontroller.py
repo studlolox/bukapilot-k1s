@@ -173,7 +173,7 @@ class CarController():
       elif CS.CP.openpilotLongitudinalControl:
 
         # standstill logic
-        if enabled and pcm_accel_cmd > 0 and CS.out.standstill and CS.CP.carFingerprint == CAR.COROLLA_TSS2:
+        if enabled and pcm_accel_cmd > 0 and CS.out.standstill and CS.CP.carFingerprint in (CAR.COROLLA_TSS2, CAR.CROSS_TSS2):
           if self.standstill_status == BrakingStatus.STANDSTILL_INIT:
             self.min_standstill_accel = pcm_accel_cmd - 0.1
           pcm_accel_cmd, self.standstill_status, self.prev_ts = standstill_brake(self.min_standstill_accel, self.prev_ts, ts, self.standstill_status)
