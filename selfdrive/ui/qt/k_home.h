@@ -64,6 +64,7 @@ public slots:
 private:
   Params params;
   QLabel *vehicle_title;
+  QLabel *vehicle_sub;
   QLabel *system_status_pill;
   QLabel *panda_status_label;
   QLabel *gps_status_label;

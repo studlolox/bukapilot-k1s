@@ -190,7 +190,7 @@ OffroadHome::OffroadHome(QWidget* parent) : QFrame(parent) {
   vehicle_title->setWordWrap(true);
   v_layout->addWidget(vehicle_title);
 
-  auto vehicle_sub = new QLabel("TSS 2.0 (No-DSU ADAS)", card_vehicle);
+  vehicle_sub = new QLabel("1.8L Petrol • TSS 2.0 (No-DSU)", card_vehicle);
   vehicle_sub->setStyleSheet("font-size: 26px; font-weight: 500; color: #A0A5B5; border: none; background: transparent;");
   v_layout->addWidget(vehicle_sub);
 
@@ -367,10 +367,18 @@ void OffroadHome::updateState(const UIState& s) {
 
   // Vehicle model display
   std::string car_name = params.get("CarModel");
-  if (!car_name.empty()) {
-    vehicle_title->setText(QString::fromStdString(car_name));
-  } else {
+  std::string fix_fp = params.get("FixFingerprint");
+  std::string display_name = !fix_fp.empty() ? fix_fp : (!car_name.empty() ? car_name : "TOYOTA COROLLA CROSS");
+
+  if (display_name == "TOYOTA COROLLA CROSS HYBRID") {
+    vehicle_title->setText("Corolla Cross Hybrid");
+    vehicle_sub->setText("1.8L HEV • TSS 2.0 (No-DSU)");
+  } else if (display_name == "TOYOTA COROLLA CROSS") {
     vehicle_title->setText("Toyota Corolla Cross");
+    vehicle_sub->setText("1.8L Petrol • TSS 2.0 (No-DSU)");
+  } else {
+    vehicle_title->setText(QString::fromStdString(display_name));
+    vehicle_sub->setText("TSS 2.0 (No-DSU ADAS)");
   }
 
   // 2. Hardware & Thermals

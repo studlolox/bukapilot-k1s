@@ -273,9 +273,8 @@ void Device::update(const UIState &s) {
 void Device::setAwake(bool on) {
   if (on != awake) {
     awake = on;
-    bool power_on = awake || ignition_on;
-    Hardware::set_display_power(power_on);
-    LOGD("setting display power %d", power_on);
+    Hardware::set_display_power(awake);
+    LOGD("setting display power %d", awake);
     emit displayPowerChanged(awake);
   }
 }
