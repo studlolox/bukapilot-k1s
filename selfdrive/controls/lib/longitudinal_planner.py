@@ -24,6 +24,48 @@ A_CRUISE_MAX_BP = [0., 15., 25., 40.]
 _A_TOTAL_MAX_V = [2.7, 3.7]
 _A_TOTAL_MAX_BP = [20., 40.]
 
+# VTSC (Vision Turn Speed Controller) constants
+VTSC_A_LAT_MAX = 2.0  # m/s^2 (~0.2G comfortable cornering limit)
+VTSC_A_DECEL = 1.3    # m/s^2 comfortable deceleration rate ahead of turn
+
+
+def eval_vtsc(v_ego, v_cruise, curvatures, t_idxs, vtsc_mode, e2e_active):
+  """
+  Calculates a comfortable curve entry speed based on upcoming path curvatures.
+  vtsc_mode: 0 = Off, 1 = E2E Only, 2 = Always On
+  """
+  if vtsc_mode == 0 or (vtsc_mode == 1 and not e2e_active):
+    return v_cruise
+
+  if curvatures is None or len(curvatures) == 0:
+    return v_cruise
+
+  try:
+    curv_arr = np.abs(np.array(curvatures))
+    if len(curv_arr) == 0 or np.isnan(curv_arr).any():
+      return v_cruise
+
+    # Avoid div by 0
+    curv_arr = np.maximum(curv_arr, 1e-4)
+
+    # v_turn = sqrt(a_lat / curvature)
+    v_turns = np.sqrt(VTSC_A_LAT_MAX / curv_arr)
+
+    # Kinematic lookahead: target speed at current position factoring in decel time
+    if t_idxs is not None and len(t_idxs) >= len(curv_arr):
+      t_arr = np.array(t_idxs[:len(curv_arr)])
+      v_targets = v_turns + VTSC_A_DECEL * t_arr
+    else:
+      v_targets = v_turns
+
+    # Find the minimum required speed along the trajectory
+    v_vtsc = float(np.min(v_targets))
+    # Never exceed the driver's set cruise speed and maintain minimum 5 m/s (~18 km/h) crawling floor
+    v_vtsc = max(5.0, v_vtsc)
+    return min(v_cruise, v_vtsc)
+  except Exception:
+    return v_cruise
+
 
 def get_max_accel(v_ego):
   return interp(v_ego, A_CRUISE_MAX_BP, A_CRUISE_MAX_VALS)
@@ -56,13 +98,16 @@ class Planner:
     self.a_desired_trajectory = np.zeros(CONTROL_N)
     self.j_desired_trajectory = np.zeros(CONTROL_N)
 
-  def update(self, sm):
+  def update(self, sm, curvatures=None, t_idxs=None, vtsc_mode=0, e2e_active=False):
     v_ego = sm['carState'].vEgo
     a_ego = sm['carState'].aEgo
 
     v_cruise_kph = sm['controlsState'].vCruise
     v_cruise_kph = min(v_cruise_kph, V_CRUISE_MAX)
     v_cruise = v_cruise_kph * CV.KPH_TO_MS
+
+    # Apply Vision Turn Speed Control (VTSC)
+    v_cruise = eval_vtsc(v_ego, v_cruise, curvatures, t_idxs, vtsc_mode, e2e_active)
 
     long_control_state = sm['controlsState'].longControlState
     force_slow_decel = sm['controlsState'].forceDecel

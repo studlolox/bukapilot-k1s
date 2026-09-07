@@ -25,12 +25,14 @@ class LateralPlanner:
     self.plan_yaw = np.zeros((TRAJECTORY_SIZE,))
     self.t_idxs = np.arange(TRAJECTORY_SIZE)
     self.y_pts = np.zeros(TRAJECTORY_SIZE)
+    self.curvatures = np.zeros(CONTROL_N)
 
     self.lat_mpc = LateralMpc()
     self.reset_mpc(np.zeros(4))
 
   def reset_mpc(self, x0=np.zeros(4)):
     self.x0 = x0
+    self.curvatures = np.zeros(CONTROL_N)
     self.lat_mpc.reset(x0=self.x0)
 
   def update(self, sm):
@@ -81,6 +83,7 @@ class LateralPlanner:
                      heading_pts)
     # init state for next
     self.x0[3] = interp(DT_MDL, self.t_idxs[:LAT_MPC_N + 1], self.lat_mpc.x_sol[:, 3])
+    self.curvatures = self.lat_mpc.x_sol[0:CONTROL_N, 3]
 
     #  Check for infeasible MPC solution
     mpc_nans = np.isnan(self.lat_mpc.x_sol[:, 3]).any()

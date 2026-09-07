@@ -131,6 +131,38 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
   }
   addItem(dm_toggle);
 
+  std::string vtsc_val = params.get("VisionTurnSpeedControl");
+  if (vtsc_val.empty()) {
+    vtsc_val = "1"; // Default to E2E Only
+    params.put("VisionTurnSpeedControl", vtsc_val);
+  }
+  QString vtsc_text = "E2E Only";
+  if (vtsc_val == "0") vtsc_text = "Off";
+  else if (vtsc_val == "2") vtsc_text = "Always On";
+
+  vtscBtn = new ButtonControl(
+    "Vision Turn Speed Control (VTSC)",
+    vtsc_text,
+    "Automatically decelerates ahead of sharp turns and highway curves using vision AI curvature prediction. Choose Off, E2E Only, or Always On.");
+  QObject::connect(vtscBtn, &ButtonControl::clicked, [=]() {
+    std::string cur = Params().get("VisionTurnSpeedControl");
+    std::string next_val = "1";
+    QString next_text = "E2E Only";
+    if (cur == "1") {
+      next_val = "2";
+      next_text = "Always On";
+    } else if (cur == "2") {
+      next_val = "0";
+      next_text = "Off";
+    } else {
+      next_val = "1";
+      next_text = "E2E Only";
+    }
+    Params().put("VisionTurnSpeedControl", next_val);
+    vtscBtn->setText(next_text);
+  });
+  addItem(vtscBtn);
+
   connect(uiState(), &UIState::uiUpdate, this, &TogglesPanel::updateState);
 }
 
@@ -139,6 +171,12 @@ void TogglesPanel::showEvent(QShowEvent *event) {
   car_moving_prev = car_moving;
   for (auto toggle : unlocked_toggles) {
     toggle->setEnabled(!car_moving);
+  }
+  if (vtscBtn) {
+    std::string cur = Params().get("VisionTurnSpeedControl");
+    if (cur == "0") vtscBtn->setText("Off");
+    else if (cur == "2") vtscBtn->setText("Always On");
+    else vtscBtn->setText("E2E Only");
   }
   ListWidget::showEvent(event);
 }

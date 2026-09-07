@@ -168,6 +168,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"UpdateStatus", CLEAR_ON_MANAGER_START},
     {"Version", PERSISTENT},
     {"VisionRadarToggle", PERSISTENT},
+    {"VisionTurnSpeedControl", PERSISTENT},
     {"ApiCache_Device", PERSISTENT},
     {"ApiCache_DriveStats", PERSISTENT},
     {"ApiCache_NavDestinations", PERSISTENT},

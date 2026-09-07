@@ -79,6 +79,7 @@ public slots:
 
 private:
   std::vector<ToggleControl *> unlocked_toggles;
+  ButtonControl *vtscBtn = nullptr;
   bool car_moving_prev = false;
 };
 
