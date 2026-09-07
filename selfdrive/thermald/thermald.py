@@ -43,14 +43,14 @@ HardwareState = namedtuple("HardwareState", ['network_type', 'network_strength',
 # List of thermal bands. We will stay within this region as long as we are within the bounds.
 # When exiting the bounds, we'll jump to the lower or higher band. Bands are ordered in the dict.
 THERMAL_BANDS = OrderedDict({
-  ThermalStatus.green: ThermalBand(None, 80.0),
-  ThermalStatus.yellow: ThermalBand(75.0, 96.0),
-  ThermalStatus.red: ThermalBand(80.0, 107.),
-  ThermalStatus.danger: ThermalBand(94.0, None),
+  ThermalStatus.green: ThermalBand(None, 85.0),
+  ThermalStatus.yellow: ThermalBand(80.0, 98.0),
+  ThermalStatus.red: ThermalBand(90.0, 107.),
+  ThermalStatus.danger: ThermalBand(96.0, None),
 })
 
 # Override to highest thermal band when offroad and above this temp
-OFFROAD_DANGER_TEMP = 79.5 if TICI else 70.0
+OFFROAD_DANGER_TEMP = 79.5 if TICI else 85.0
 
 prev_offroad_states: Dict[str, Tuple[bool, Optional[str]]] = {}
 
