@@ -19,36 +19,6 @@ MAX_STEER_RATE_FRAMES = 18
 # EPS allows user torque above threshold for 50 frames before permanently faulting
 MAX_USER_TORQUE = 500
 
-PUMP_RESET_INTERVAL = 1.5
-PUMP_RESET_DURATION = 0.1
-
-class BrakingStatus():
-  STANDSTILL_INIT = 0
-  BRAKE_HOLD = 1
-  PUMP_RESET = 2
-
-# reset pump every PUMP_RESET_INTERVAL seconds for. Reset to zero for PUMP_RESET_DURATION
-def standstill_brake(min_accel, ts_last, ts_now, prev_status):
-  brake = min_accel
-  status = prev_status
-
-  dt = ts_now - ts_last
-  if prev_status == BrakingStatus.PUMP_RESET and dt > PUMP_RESET_DURATION:
-    status = BrakingStatus.BRAKE_HOLD
-    ts_last = ts_now
-
-  if prev_status == BrakingStatus.BRAKE_HOLD and dt > PUMP_RESET_INTERVAL:
-    status = BrakingStatus.PUMP_RESET
-    ts_last = ts_now
-
-  if prev_status == BrakingStatus.STANDSTILL_INIT and dt > PUMP_RESET_INTERVAL:
-    status = BrakingStatus.PUMP_RESET
-    ts_last = ts_now
-
-  if status == BrakingStatus.PUMP_RESET:
-    brake = 0
-
-  return brake, status, ts_last
 
 class CarController():
   def __init__(self, dbc_name, CP, VM):
@@ -63,11 +33,6 @@ class CarController():
     self.gas = 0
     self.accel = 0
 
-    # standstill globals
-    self.prev_ts = 0.
-    self.standstill_status = BrakingStatus.STANDSTILL_INIT
-    self.min_standstill_accel = 0
-
     self.params = Params()
     self.f = Features()
     self.force_use_stock_acc = self.f.has("StockAcc") or self.params.get_bool("UseStockAcc")
@@ -78,7 +43,6 @@ class CarController():
     if frame % 50 == 0:
       self.force_use_stock_acc = self.f.has("StockAcc") or self.params.get_bool("UseStockAcc")
 
-    ts = frame * DT_CTRL
     lat_active = active and abs(CS.out.steeringTorque) < MAX_USER_TORQUE
 
     # gas and brake
@@ -177,17 +141,22 @@ class CarController():
           can_sends.append(make_can_msg(512, b'\x01\x2F\x01\x2F\x00\x01\x00\x00', 0))
       elif CS.CP.openpilotLongitudinalControl:
 
-        # standstill logic
-        if enabled and pcm_accel_cmd > 0 and CS.out.standstill and CS.CP.carFingerprint in (CAR.COROLLA_TSS2, CAR.COROLLAH_TSS2, CAR.CROSS_TSS2, CAR.CROSSH_TSS2):
-          if self.standstill_status == BrakingStatus.STANDSTILL_INIT:
-            self.min_standstill_accel = pcm_accel_cmd - 0.1
-          pcm_accel_cmd, self.standstill_status, self.prev_ts = standstill_brake(self.min_standstill_accel, self.prev_ts, ts, self.standstill_status)
+        if self.force_use_stock_acc:
+          if not CS.out.standstill:
+            # Let stock TSS ACC smoothly manage car following and deceleration down to stop
+            pcm_accel_cmd = CS.stock_acc_cmd
+          else:
+            # At complete standstill, lock firm brake hold (-1.5 m/s^2) to prevent forward creep
+            pcm_accel_cmd = -1.5
         else:
-          self.standstill_status = BrakingStatus.STANDSTILL_INIT
-          self.prev_ts = ts
-
-        if self.force_use_stock_acc and CS.out.vEgo > 1:
-          pcm_accel_cmd = CS.stock_acc_cmd
+          # Pure openpilot longitudinal control
+          if CS.out.standstill:
+            # Firmly hold the vehicle stopped at standstill if cruiseState indicates standstill or planner commands braking
+            if CS.out.cruiseState.standstill or pcm_accel_cmd < 0.1:
+              pcm_accel_cmd = -1.5
+          elif CS.out.vEgo < 1.5 and lead:
+            # Low-speed anti-surge protection: prevent vision noise from causing forward acceleration spikes near lead
+            pcm_accel_cmd = min(pcm_accel_cmd, 0.0)
 
         can_sends.append(create_accel_command(self.packer, pcm_accel_cmd, pcm_cancel_cmd, self.standstill_req, lead, CS.acc_type, CS.distance_btn))
         self.accel = pcm_accel_cmd
@@ -228,7 +197,7 @@ class CarController():
 
     new_actuators = actuators.copy()
     new_actuators.steer = apply_steer / CarControllerParams.STEER_MAX
-    new_actuators.accel = CS.stock_acc_cmd if (self.force_use_stock_acc and CS.out.vEgo > 1) else self.accel
+    new_actuators.accel = self.accel
     new_actuators.gas = self.gas
 
     return new_actuators, can_sends

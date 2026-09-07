@@ -81,6 +81,12 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       "../assets/offroad/icon_speed_limit.png",
     },
     {
+      "ResumeWithRes",
+      "Resume from Stop with RES+",
+      "Require pressing the steering wheel RES+ button or tapping the accelerator to resume driving from a complete stop. When disabled, the car automatically resumes when the vehicle ahead moves.",
+      "../assets/offroad/icon_speed_limit.png",
+    },
+    {
       "ScreenOffDriving",
       "Screen Off While Driving",
       "Turn off the screen after 15 seconds of driving with no interaction. The screen automatically wakes up when tapped or when a driving alert occurs.",

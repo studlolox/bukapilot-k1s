@@ -191,6 +191,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"FixFingerprint", PERSISTENT},
     {"StockAccToggle_Allow", PERSISTENT},
     {"UseStockAcc", PERSISTENT},
+    {"ResumeWithRes", PERSISTENT},
     {"QuietMode", PERSISTENT},
     {"ScreenOffDriving", PERSISTENT},
     {"IgnoreDM", PERSISTENT},

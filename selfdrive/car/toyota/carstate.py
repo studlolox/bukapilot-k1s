@@ -1,3 +1,4 @@
+from common.params import Params
 from cereal import car
 from common.numpy_fast import mean
 from common.filter_simple import FirstOrderFilter
@@ -34,7 +35,20 @@ class CarState(CarStateBase):
 
     self.stock_acc_cmd = 0
 
+    # Standstill resume tracking
+    self.params = Params()
+    self.resume_with_res = self.params.get_bool("ResumeWithRes")
+    self.standstill_latched = False
+    self.prev_set_speed = 0.
+    self.prev_speed_cluster = 0.
+    self.prev_pcm_acc_status = 0
+    self.frame = 0
+
   def update(self, cp, cp_cam):
+    if self.frame % 50 == 0:
+      self.resume_with_res = self.params.get_bool("ResumeWithRes")
+    self.frame += 1
+
     ret = car.CarState.new_message()
     self.stock_acc_cmd = cp.vl["ACC_CONTROL"]["ACCEL_CMD"]
 
@@ -136,6 +150,30 @@ class CarState(CarStateBase):
       ret.cruiseState.standstill = False
     else:
       ret.cruiseState.standstill = self.pcm_acc_status == 7
+
+    # If Resume from Stop with RES+ is enabled, latch standstill when stopped
+    # until driver resumes via RES+ switch or accelerator pedal
+    if self.resume_with_res:
+      res_pressed = (
+        (self.prev_set_speed > 0 and ret.cruiseState.speed != self.prev_set_speed) or
+        (self.prev_speed_cluster > 0 and ret.cruiseState.speedCluster != self.prev_speed_cluster) or
+        (self.prev_pcm_acc_status == 7 and self.pcm_acc_status == 8)
+      )
+      if ret.standstill:
+        if not self.standstill_latched and not (ret.gasPressed or res_pressed):
+          self.standstill_latched = True
+        elif ret.gasPressed or res_pressed:
+          self.standstill_latched = False
+
+        if self.standstill_latched:
+          ret.cruiseState.standstill = True
+      else:
+        self.standstill_latched = False
+
+    self.prev_set_speed = ret.cruiseState.speed
+    self.prev_speed_cluster = ret.cruiseState.speedCluster
+    self.prev_pcm_acc_status = self.pcm_acc_status
+
     ret.cruiseState.enabled = bool(cp.vl["PCM_CRUISE"]["CRUISE_ACTIVE"])
     ret.cruiseState.nonAdaptive = cp.vl["PCM_CRUISE"]["CRUISE_STATE"] in (1, 2, 3, 4, 5, 6)
 

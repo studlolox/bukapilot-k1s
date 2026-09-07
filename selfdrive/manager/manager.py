@@ -75,6 +75,7 @@ def manager_init() -> None:
     ("StoppingDistanceOffset", "0.0"),
     ("DrivePathOffset", "0.0"),
     ("UseStockAcc", "0"),
+    ("ResumeWithRes", "0"),
     ("DisableRadar", "0"),
     ("ScreenOffDriving", "0"),
   ]
