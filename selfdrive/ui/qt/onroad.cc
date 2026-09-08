@@ -559,61 +559,54 @@ void OnroadHud::drawBottomTorqueArcBar(QPainter &p, int cx, int y, float torque,
   p.setPen(QPen(QColor(15, 20, 28, 210), 19, Qt::SolidLine, Qt::RoundCap));
   p.drawArc(arcRect, bgStart, bgSpan);
 
-  // 2. Center Zero Reference Tick (at 90°, 12 o'clock)
-  p.setPen(QPen(QColor(255, 255, 255, 115), 2.5, Qt::SolidLine, Qt::RoundCap));
-  p.drawLine(QPointF(cx, y - 6.0f), QPointF(cx, y + 6.0f));
+  // 2. Center Zero Reference Pip (neutral indicator at 90°, 12 o'clock)
+  const float pip_r = 7.0f;
+  p.setPen(QPen(QColor(255, 255, 255, 120), 2.0f));
+  p.setBrush(QColor(15, 20, 28, 220));
+  p.drawEllipse(QPointF(cx, y), pip_r, pip_r);
 
-  // 3. Torque Dynamics Calculation
+  // 3. Torque Dynamics Calculation & Limit Warning Colors
   float clamped = std::clamp(torque, -1.0f, 1.0f);
   float abs_torque = std::abs(clamped);
 
-  const float pill_half_span = 2.6f; // ~100px pill length
-  const float max_deflection = theta_max - pill_half_span - 0.5f; // ~7.9° max travel
-  float pill_center_deg = 90.0f - clamped * max_deflection;
-
-  // Colors based on torque magnitude & state
-  QColor pill_core_col = QColor(255, 255, 255, 250);
-  QColor pill_glow_col = QColor(255, 255, 255, 75);
-  QColor trail_col = QColor(255, 255, 255, 95);
+  QColor arc_core_col = QColor(255, 255, 255, 250);
+  QColor arc_glow_col = QColor(255, 255, 255, 80);
 
   if (saturated || abs_torque > 0.85f) {
-    pill_core_col = QColor(248, 113, 113, 255); // Alert coral red
-    pill_glow_col = QColor(248, 113, 113, 110);
-    trail_col = QColor(248, 113, 113, 170);
+    arc_core_col = QColor(248, 113, 113, 255); // Alert coral red (steering limit reached/saturated)
+    arc_glow_col = QColor(248, 113, 113, 120);
   } else if (abs_torque > 0.60f) {
-    pill_core_col = QColor(245, 158, 11, 255);  // Warning amber
-    pill_glow_col = QColor(245, 158, 11, 100);
-    trail_col = QColor(245, 158, 11, 160);
+    arc_core_col = QColor(245, 158, 11, 255);  // Warning amber (approaching steering limit)
+    arc_glow_col = QColor(245, 158, 11, 100);
   } else if (lateralActive) {
-    pill_core_col = QColor(255, 255, 255, 255);
-    pill_glow_col = QColor(255, 255, 255, 80);
-    trail_col = QColor(128, 216, 166, 140);      // Subtle mint connection trail
+    arc_core_col = QColor(255, 255, 255, 255); // Luminous white
+    arc_glow_col = QColor(255, 255, 255, 75);
   } else {
-    pill_core_col = QColor(215, 220, 228, 190);
-    pill_glow_col = QColor(255, 255, 255, 30);
-    trail_col = QColor(255, 255, 255, 50);
+    arc_core_col = QColor(215, 220, 228, 180);
+    arc_glow_col = QColor(255, 255, 255, 30);
   }
 
-  // 4. Dynamic Force Sweep Trail (between 90° center and pill center)
-  if (abs_torque > 0.025f) {
-    float trail_span_deg = -clamped * max_deflection;
-    int trailStart = 90 * 16;
-    int trailSpan = (int)std::round(trail_span_deg * 16.0f);
-    p.setPen(QPen(trail_col, 10, Qt::SolidLine, Qt::RoundCap));
-    p.drawArc(arcRect, trailStart, trailSpan);
+  // 4. Growing Steering Arc (Comma 4 behavior)
+  // Arc grows outward from 90° center towards left or right as steering torque approaches limits
+  const float max_span = theta_max - 1.2f; // ~9.8° max arc length
+  if (abs_torque > 0.02f) {
+    float sweep_deg = -clamped * max_span;
+    int activeStart = 90 * 16;
+    int activeSpan = (int)std::round(sweep_deg * 16.0f);
+
+    // Soft luminous outer glow
+    p.setPen(QPen(arc_glow_col, 20, Qt::SolidLine, Qt::RoundCap));
+    p.drawArc(arcRect, activeStart, activeSpan);
+
+    // Solid bright growing steering arc
+    p.setPen(QPen(arc_core_col, 14, Qt::SolidLine, Qt::RoundCap));
+    p.drawArc(arcRect, activeStart, activeSpan);
+
+    // Active center pip accent dot
+    p.setPen(QPen(arc_core_col, 1.5f));
+    p.setBrush(arc_core_col);
+    p.drawEllipse(QPointF(cx, y), 3.5f, 3.5f);
   }
-
-  // 5. Active Slider Pill Capsule
-  int pillStart = (int)std::round((pill_center_deg + pill_half_span) * 16.0f);
-  int pillSpan = (int)std::round((-2.0f * pill_half_span) * 16.0f);
-
-  // Soft luminous outer glow around slider pill
-  p.setPen(QPen(pill_glow_col, 20, Qt::SolidLine, Qt::RoundCap));
-  p.drawArc(arcRect, pillStart, pillSpan);
-
-  // Solid bright core of slider pill
-  p.setPen(QPen(pill_core_col, 14, Qt::SolidLine, Qt::RoundCap));
-  p.drawArc(arcRect, pillStart, pillSpan);
 
   p.restore();
 }
