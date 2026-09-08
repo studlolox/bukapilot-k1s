@@ -55,6 +55,15 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
           true,
       },
       {
+          "EndToEndToggle",
+          "Disable use of lanelines (Alpha)",
+          "In this mode openpilot will ignore lanelines and just drive how it "
+          "thinks a human would (end-to-end model path). Can also be toggled "
+          "directly from the onroad HUD pill button.",
+          "../assets/offroad/icon_road.png",
+          false,
+      },
+      {
           "IsRHD",
           "Enable Right-Hand Drive",
           "Allow EZPilot to obey left-hand traffic conventions and perform "
