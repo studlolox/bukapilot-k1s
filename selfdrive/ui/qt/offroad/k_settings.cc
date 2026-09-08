@@ -753,3 +753,12 @@ void SettingsWindow::hideEvent(QHideEvent *event) {
   HardwareEon::close_activities();
 #endif
 }
+
+void SettingsWindow::setCurrentPanel(int index) {
+  if (!nav_btns || !panel_widget) return;
+  auto btns = nav_btns->buttons();
+  if (index >= 0 && index < btns.size() && index < panel_widget->count()) {
+    btns[index]->setChecked(true);
+    panel_widget->setCurrentIndex(index);
+  }
+}

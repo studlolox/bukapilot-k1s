@@ -67,9 +67,20 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent) {
       closeSettings();
     }
   });
+
+  if (getenv("UI_TEST_SCREENSHOT") != nullptr) {
+    QTimer::singleShot(1500, [=]() {
+      QPixmap pix = this->grab();
+      pix.save(getenv("UI_TEST_SCREENSHOT"));
+      qApp->quit();
+    });
+  }
 }
 
-void MainWindow::openSettings() {
+void MainWindow::openSettings(int panel_index) {
+  if (settingsWindow) {
+    settingsWindow->setCurrentPanel(panel_index);
+  }
   main_layout->setCurrentWidget(settingsWindow);
 }
 

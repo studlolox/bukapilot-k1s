@@ -5,7 +5,7 @@
 
 #include "selfdrive/ui/qt/k_home.h"
 #include "selfdrive/ui/qt/offroad/onboarding.h"
-#include "selfdrive/ui/qt/offroad/settings.h"
+#include "selfdrive/ui/qt/offroad/k_settings.h"
 
 class MainWindow : public QWidget {
   Q_OBJECT
@@ -15,7 +15,7 @@ public:
 
 private:
   bool eventFilter(QObject *obj, QEvent *event) override;
-  void openSettings();
+  void openSettings(int panel_index = 0);
   void closeSettings();
 
   Device device;

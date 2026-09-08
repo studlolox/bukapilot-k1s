@@ -6,6 +6,19 @@
 #include "selfdrive/ui/qt/widgets/controls.h"
 #include "selfdrive/ui/ui.h"
 
+class SidebarItem : public ClickableWidget {
+  Q_OBJECT
+
+public:
+  SidebarItem(const QString& label, const QString &iconPath, QWidget *parent);
+  void setBadgeCount(int count);
+  void setIcon(const QString &iconPath);
+
+private:
+  QLabel *icon;
+  QLabel *badge;
+};
+
 class Sidebar : public QFrame {
   Q_OBJECT
 
@@ -15,21 +28,12 @@ public:
 
 signals:
   void openAlerts();
-  void openSettings();
+  void openSettings(int panel = 0);
   void openTerms();
   void openTraining();
 
 private:
-  QPixmap alert_empty_icon, alert_unread_icon;
-  QLabel *alert_icon;
-};
-
-class SidebarItem : public ClickableWidget {
-  Q_OBJECT
-
-public:
-  SidebarItem(const QString& label, const QString &iconPath, QWidget *parent);
-
-  QLabel *icon;
-  QLabel *text;
+  SidebarItem *alerts_item;
+  SidebarItem *settings_item;
+  SidebarItem *network_item;
 };

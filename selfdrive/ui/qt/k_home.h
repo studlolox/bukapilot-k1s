@@ -51,6 +51,10 @@ private:
     QPixmap img;
 };
 
+class VehicleVisualizerWidget;
+class ThermalGaugeWidget;
+class StorageProgressWidget;
+
 class OffroadHome : public QFrame {
   Q_OBJECT
 
@@ -58,20 +62,30 @@ public:
   bool hasSevereAlerts = false;
   explicit OffroadHome(QWidget* parent = 0);
 
+signals:
+  void openSettings(int panel = 0);
+  void openDriverView();
+
 public slots:
   void updateState(const UIState& s);
 
 private:
   Params params;
+  QLabel *clock_label;
+  QLabel *wifi_pill;
+  QLabel *gps_pill;
+
+  VehicleVisualizerWidget *vehicle_visualizer;
   QLabel *vehicle_title;
   QLabel *vehicle_sub;
   QLabel *system_status_pill;
   QLabel *panda_status_label;
+  QLabel *calib_status_label;
   QLabel *gps_status_label;
 
-  QLabel *temperature_value;
-  QLabel *thermal_tier_label;
-  QLabel *storage_value;
+  ThermalGaugeWidget *thermal_gauge;
+  StorageProgressWidget *storage_progress;
+  QLabel *device_info_pill;
 
   QLabel *version_label;
 };
@@ -83,7 +97,7 @@ public:
   explicit HomeWindow(QWidget* parent = 0);
 
 signals:
-  void openSettings();
+  void openSettings(int panel = 0);
   void openTerms();
   void openTraining();
   void closeSettings();

@@ -23,6 +23,7 @@ class SettingsWindow : public QFrame {
 
 public:
   explicit SettingsWindow(QWidget *parent = 0);
+  void setCurrentPanel(int index);
 
 protected:
   void hideEvent(QHideEvent *event) override;
