@@ -321,9 +321,23 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
   }
 
   setStyleSheet(R"(
-    #reboot_btn { height: 120px; border-radius: 15px; background-color: #393939; }
+    #reboot_btn {
+      height: 120px;
+      border-radius: 15px;
+      background-color: #393939;
+      color: #FFFFFF;
+      font-size: 35px;
+      font-weight: 600;
+    }
     #reboot_btn:pressed { background-color: #4a4a4a; }
-    #poweroff_btn { height: 120px; border-radius: 15px; background-color: #E22C2C; }
+    #poweroff_btn {
+      height: 120px;
+      border-radius: 15px;
+      background-color: #E22C2C;
+      color: #FFFFFF;
+      font-size: 35px;
+      font-weight: 600;
+    }
     #poweroff_btn:pressed { background-color: #FF2424; }
   )");
   addItem(power_layout);
@@ -640,6 +654,7 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
   panel_widget->setStyleSheet(R"(
     border-radius: 1px;
     background-color: #202020;
+    color: #FFFFFF;
   )");
 
   // close button
@@ -651,6 +666,7 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
       border: 0px black solid;
       border-radius: 75px;
       background-color: black;
+      color: #FFFFFF;
     }
     QPushButton:pressed {
       background-color: #3B3B3B;

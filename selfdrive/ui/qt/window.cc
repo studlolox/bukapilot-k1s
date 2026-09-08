@@ -15,10 +15,18 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent) {
   QFontDatabase::addApplicationFont("../assets/fonts/GlacialIndifference-Regular.otf");
   QFontDatabase::addApplicationFont("../assets/fonts/GlacialIndifference-Bold.otf");
 
+  // global application styling and dark palette
+  QPalette darkPalette;
+  darkPalette.setColor(QPalette::WindowText, Qt::white);
+  darkPalette.setColor(QPalette::Text, Qt::white);
+  darkPalette.setColor(QPalette::ButtonText, Qt::white);
+  qApp->setPalette(darkPalette);
+
   // no outline to prevent the focus rectangle
   setStyleSheet(R"(
     * {
       font-family: Inter, Glacial Indifference, sans-serif;
+      color: #FFFFFF;
       outline: none;
     }
   )");
@@ -67,6 +75,10 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent) {
       closeSettings();
     }
   });
+
+  if (getenv("UI_TEST_SETTINGS") != nullptr) {
+    openSettings(0);
+  }
 
   if (getenv("UI_TEST_SCREENSHOT") != nullptr) {
     QTimer::singleShot(1500, [=]() {

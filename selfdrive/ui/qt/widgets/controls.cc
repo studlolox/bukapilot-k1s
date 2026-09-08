@@ -41,7 +41,7 @@ AbstractControl::AbstractControl(const QString &title, const QString &desc, cons
   // title
   title_label = new QPushButton(title);
   title_label->setFixedHeight(120);
-  title_label->setStyleSheet("font-size: 50px; font-weight: 400; text-align: left");
+  title_label->setStyleSheet("font-size: 50px; font-weight: 400; text-align: left; border: none; background: transparent; color: #FFFFFF;");
   hlayout->addWidget(title_label);
 
   main_layout->addLayout(hlayout);
@@ -181,6 +181,10 @@ ButtonControl::ButtonControl(const QString &title, const QString &text, const QS
     btn.setStyleSheet(R"(
       QPushButton {
         border: none;
+        background: transparent;
+        color: #E4E4E4;
+        font-size: 35px;
+        font-weight: 500;
       }
     )");
   }
@@ -197,6 +201,10 @@ ElidedLabel::ElidedLabel(QWidget *parent) : ElidedLabel({}, parent) {}
 ElidedLabel::ElidedLabel(const QString &text, QWidget *parent) : QLabel(text.trimmed(), parent) {
   setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
   setMinimumWidth(1);
+  QFont f = font();
+  f.setPixelSize(35);
+  setFont(f);
+  setStyleSheet("color: #E4E4E4; font-size: 35px;");
 }
 
 void ElidedLabel::resizeEvent(QResizeEvent* event) {
@@ -212,9 +220,12 @@ void ElidedLabel::paintEvent(QPaintEvent *event) {
   }
 
   QPainter painter(this);
+  painter.setFont(font());
   drawFrame(&painter);
   QStyleOption opt;
   opt.initFrom(this);
+  opt.palette.setColor(QPalette::WindowText, QColor(228, 228, 228));
+  opt.palette.setColor(QPalette::Text, QColor(228, 228, 228));
   style()->drawItemText(&painter, contentsRect(), alignment(), opt.palette, isEnabled(), elidedText_, foregroundRole());
 }
 
