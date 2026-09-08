@@ -5,7 +5,8 @@ from selfdrive.car.toyota.toyotacan import create_steer_command, create_ui_comma
                                            create_accel_command, create_acc_cancel_command, \
                                            create_fcw_command, create_lta_steer_command
 from selfdrive.car.toyota.values import CAR, STATIC_DSU_MSGS, NO_STOP_TIMER_CAR, TSS2_CAR, \
-                                        MIN_ACC_SPEED, PEDAL_TRANSITION, CarControllerParams, EV_HYBRID_CAR
+                                        MIN_ACC_SPEED, PEDAL_TRANSITION, CarControllerParams, EV_HYBRID_CAR, \
+                                        STEER_THRESHOLD
 from opendbc.can.packer import CANPacker
 from common.realtime import DT_CTRL
 VisualAlert = car.CarControl.HUDControl.VisualAlert
@@ -69,6 +70,12 @@ class CarController():
 
     # steer torque
     new_steer = int(round(actuators.steer * CarControllerParams.STEER_MAX))
+
+    # Soft driver override blending to prevent EPS counter accumulation and jerky cutoffs
+    if abs(CS.out.steeringTorque) > STEER_THRESHOLD:
+      driver_factor = interp(abs(CS.out.steeringTorque), [STEER_THRESHOLD, MAX_USER_TORQUE], [1.0, 0.0])
+      new_steer = int(round(new_steer * driver_factor))
+
     apply_steer = apply_toyota_steer_torque_limits(new_steer, self.last_steer, CS.out.steeringTorqueEps, CarControllerParams)
     self.steer_rate_limited = new_steer != apply_steer
 

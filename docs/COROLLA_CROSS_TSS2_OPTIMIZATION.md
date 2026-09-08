@@ -200,8 +200,8 @@ Tropical sun creates reflections from the Corolla Cross dashboard onto the winds
 ```
 ├── Phase 1: Core Lateral Dynamics
 │   ├── [✓] Baseline verification (Wheelbase 2.64m, Steer Ratio 13.9)
-│   ├── [ ] Integrate driver override torque blending in carcontroller.py
-│   └── [ ] Calibrate LatControlTorque (latAccelFactor=2.6, friction=0.075)
+│   ├── [✓] Integrate driver override torque blending in carcontroller.py
+│   └── [✓] Calibrate speed-scheduled PID_CROSS tune (tunes.py & interface.py)
 │
 ├── Phase 2: Hybrid Longitudinal Refinement
 │   ├── [ ] Smooth 15 km/h to 0 km/h deceleration transition in LongTunes.CROSS_HYBRID
