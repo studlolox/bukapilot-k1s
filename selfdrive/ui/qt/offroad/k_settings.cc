@@ -23,7 +23,20 @@
 #include "selfdrive/ui/qt/widgets/toggle.h"
 #include "selfdrive/ui/ui.h"
 
+static QPixmap tintPixmap(const QPixmap &src, const QColor &color) {
+  if (src.isNull()) return src;
+  QPixmap tinted(src.size());
+  tinted.fill(Qt::transparent);
+  QPainter p(&tinted);
+  p.drawPixmap(0, 0, src);
+  p.setCompositionMode(QPainter::CompositionMode_SourceIn);
+  p.fillRect(tinted.rect(), color);
+  p.end();
+  return tinted;
+}
+
 TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
+  setDrawDividers(false);
   // param, title, desc, icon, restart_required
   std::vector<std::tuple<QString, QString, QString, QString, bool>> toggles{
       {
@@ -132,6 +145,9 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
 
   Params params;
 
+  SettingsCard *card_adas = new SettingsCard("Core Driving Assistance & Longitudinal", this);
+  SettingsCard *card_safety = new SettingsCard("Safety Alerts & Device Preferences", this);
+
   for (auto &[param, title, desc, icon, restart_req] : toggles) {
     auto toggle = new ParamControl(param, title, desc, icon, this, restart_req);
     bool locked = params.getBool((param + "Lock").toStdString());
@@ -139,7 +155,13 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
     if (!locked) {
       unlocked_toggles.push_back(toggle);
     }
-    addItem(toggle);
+    if (param == "OpenpilotEnabledToggle" || param == "IsAlcEnabled" ||
+        param == "EndToEndToggle" || param == "DisableRadar" ||
+        param == "UseStockAcc" || param == "ResumeWithRes") {
+      card_adas->addItem(toggle);
+    } else {
+      card_safety->addItem(toggle);
+    }
   }
 
   auto dm_toggle = new ConfirmParamControl(
@@ -156,7 +178,7 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
   if (!dm_locked) {
     unlocked_toggles.push_back(dm_toggle);
   }
-  addItem(dm_toggle);
+  card_safety->addItem(dm_toggle);
 
   std::string vtsc_val = params.get("VisionTurnSpeedControl");
   if (vtsc_val.empty()) {
@@ -190,7 +212,10 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
     Params().put("VisionTurnSpeedControl", next_val);
     vtscBtn->setText(next_text);
   });
-  addItem(vtscBtn);
+  card_adas->addItem(vtscBtn);
+
+  addItem(card_adas);
+  addItem(card_safety);
 
   connect(uiState(), &UIState::uiUpdate, this, &TogglesPanel::updateState);
 }
@@ -224,23 +249,30 @@ void TogglesPanel::updateState(const UIState &s) {
 }
 
 DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
-  addItem(new LabelControl("Dongle ID", getDongleId().value_or("N/A")));
-  serialBtn = new ButtonControl("Serial", params.get("HardwareSerial").c_str(),
+  setDrawDividers(false);
+
+  // Card 1: Device Information
+  SettingsCard *card_info = new SettingsCard("Device Information", this);
+  card_info->addItem(new LabelControl("Dongle ID", getDongleId().value_or("N/A")));
+  serialBtn = new ButtonControl("Serial Number", params.get("HardwareSerial").c_str(),
                                 "", true);
-  addItem(serialBtn);
+  card_info->addItem(serialBtn);
+  addItem(card_info);
+
   testBtn = new ButtonControl("QC Test", "Start");
   replaceSplashBtn = new ButtonControl("Replace Splash Image", "Replace");
   dumpTmuxBtn = new ButtonControl("Dump TMUX", "Dump");
 
-  // offroad-only buttons
+  // Card 2: Hardware & Vision
+  SettingsCard *card_hardware = new SettingsCard("Hardware & Vision", this);
   auto dcamBtn = new ButtonControl(
-      "Driver Camera", "PREVIEW",
+      "Driver Facing Camera", "PREVIEW",
       "Preview the driver facing camera to help optimize device mounting "
       "position for best driver monitoring experience. (vehicle must be off)");
   connect(dcamBtn, &ButtonControl::clicked, [=]() { emit showDriverView(); });
-  addItem(dcamBtn);
+  card_hardware->addItem(dcamBtn);
 
-  resetCalibBtn = new ButtonControl("Reset Calibration", "RESET", " ");
+  resetCalibBtn = new ButtonControl("Camera Calibration", "RESET", " ");
   connect(resetCalibBtn, &ButtonControl::showDescription, this,
           &DevicePanel::updateCalibDescription);
   connect(resetCalibBtn, &ButtonControl::clicked, [&]() {
@@ -249,14 +281,24 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
       params.remove("CalibrationParams");
     }
   });
-  addItem(resetCalibBtn);
+  card_hardware->addItem(resetCalibBtn);
+
+  if (Hardware::TICI()) {
+    auto regulatoryBtn = new ButtonControl("Regulatory", "VIEW", "");
+    connect(regulatoryBtn, &ButtonControl::clicked, [=]() {
+      const std::string txt = util::read_file("../assets/offroad/fcc.html");
+      RichTextDialog::alert(QString::fromStdString(txt), this);
+    });
+    card_hardware->addItem(regulatoryBtn);
+  }
+  addItem(card_hardware);
 
   connect(serialBtn, &ButtonControl::clicked, [=]() {
     dev_tab_counter++;
     if (dev_tab_counter == 3) {
-      addItem(testBtn);
-      addItem(replaceSplashBtn);
-      addItem(dumpTmuxBtn);
+      card_hardware->addItem(testBtn);
+      card_hardware->addItem(replaceSplashBtn);
+      card_hardware->addItem(dumpTmuxBtn);
 
       connect(replaceSplashBtn, &ButtonControl::clicked, [=]() {
         std::system("dd if=/data/openpilot/selfdrive/assets/newsplash.img "
@@ -292,15 +334,6 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
     }
   });
 
-  if (Hardware::TICI()) {
-    auto regulatoryBtn = new ButtonControl("Regulatory", "VIEW", "");
-    connect(regulatoryBtn, &ButtonControl::clicked, [=]() {
-      const std::string txt = util::read_file("../assets/offroad/fcc.html");
-      RichTextDialog::alert(QString::fromStdString(txt), this);
-    });
-    addItem(regulatoryBtn);
-  }
-
   QObject::connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
     for (auto btn : findChildren<ButtonControl *>()) {
       btn->setEnabled(offroad);
@@ -308,17 +341,18 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
     resetCalibBtn->setEnabled(true);
   });
 
-  // power buttons
+  // Card 3: Device Power Management
+  SettingsCard *card_power = new SettingsCard("Device Power Management", this);
   QHBoxLayout *power_layout = new QHBoxLayout();
-  power_layout->setSpacing(30);
+  power_layout->setSpacing(24);
 
-  QPushButton *reboot_btn = new QPushButton("Reboot");
+  QPushButton *reboot_btn = new QPushButton("[  ⟳  Reboot Device  ]");
   reboot_btn->setObjectName("reboot_btn");
   power_layout->addWidget(reboot_btn);
   QObject::connect(reboot_btn, &QPushButton::clicked, this,
                    &DevicePanel::reboot);
 
-  QPushButton *poweroff_btn = new QPushButton("Power Off");
+  QPushButton *poweroff_btn = new QPushButton("[  ⏻  Power Off  ]");
   poweroff_btn->setObjectName("poweroff_btn");
   power_layout->addWidget(poweroff_btn);
   QObject::connect(poweroff_btn, &QPushButton::clicked, this,
@@ -329,27 +363,46 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
             &QPushButton::setVisible);
   }
 
+  card_power->addItem(power_layout);
+  addItem(card_power);
+
   setStyleSheet(R"(
     #reboot_btn {
-      height: 120px;
-      border-radius: 15px;
-      background-color: #393939;
+      height: 92px;
+      border-radius: 28px;
+      background-color: rgba(28, 36, 52, 0.9);
+      border: 1.5px solid rgba(255, 255, 255, 0.16);
       color: #FFFFFF;
-      font-size: 35px;
+      font-size: 30px;
       font-weight: 600;
     }
-    #reboot_btn:pressed { background-color: #4a4a4a; }
+    #reboot_btn:hover {
+      border-color: rgba(0, 245, 212, 0.6);
+      background-color: rgba(36, 48, 70, 0.95);
+      color: #00F5D4;
+    }
+    #reboot_btn:pressed {
+      border-color: #00F5D4;
+      background-color: rgba(14, 22, 35, 0.95);
+      color: #00F5D4;
+    }
     #poweroff_btn {
-      height: 120px;
-      border-radius: 15px;
-      background-color: #E22C2C;
+      height: 92px;
+      border-radius: 28px;
+      background-color: rgba(220, 38, 38, 0.85);
+      border: 1.5px solid rgba(248, 113, 113, 0.5);
       color: #FFFFFF;
-      font-size: 35px;
+      font-size: 30px;
       font-weight: 600;
     }
-    #poweroff_btn:pressed { background-color: #FF2424; }
+    #poweroff_btn:hover {
+      background-color: rgba(239, 68, 68, 0.95);
+      border-color: #F87171;
+    }
+    #poweroff_btn:pressed {
+      background-color: rgba(185, 28, 28, 0.95);
+    }
   )");
-  addItem(power_layout);
 }
 
 void DevicePanel::updateCalibDescription() {
@@ -407,32 +460,38 @@ void DevicePanel::poweroff() {
 }
 
 PersonalisedPanel::PersonalisedPanel(QWidget *parent) : ListWidget(parent) {
+  setDrawDividers(false);
+
+  SettingsCard *card_driving = new SettingsCard("Driving Calibration & Offsets", this);
   // min, max, step
   stopDistanceOffsetSb = new SpinboxControl(
       "StoppingDistanceOffset", "Stop Distance Offset",
       "The offset distance from the lead car the vehicle is meant to stop", "m",
       (double[]){-2.0, 5.0, 0.1}, true);
-  addItem(stopDistanceOffsetSb);
+  card_driving->addItem(stopDistanceOffsetSb);
 
   drivePathOffsetSb = new SpinboxControl(
       "DrivePathOffset", "Path Skew Offset",
       "The path offset from center of the lane. Perform positive offset if the "
       "vehicle is currently skewed left.",
       "m", (double[]){-1.0, 1.0, 0.05}, true);
-  addItem(drivePathOffsetSb);
+  card_driving->addItem(drivePathOffsetSb);
+  addItem(card_driving);
 
+  SettingsCard *card_power = new SettingsCard("Hardware & Power Profiles", this);
   fanPwmOverrideSb =
       new SpinboxControl("FanPwmOverride", "Fan Speed",
                          "Note: Lowering the fan speed may reduce the overall "
                          "fan noise but risk of device overheating.",
                          "%", (double[]){0, 100.0, 10.0}, false);
-  addItem(fanPwmOverrideSb);
+  card_power->addItem(fanPwmOverrideSb);
 
   powerSaverEntryDurationSb =
       new SpinboxControl("PowerSaverEntryDuration", "Device Poweroff",
                          "Power saver entry duration after ignition is off.",
                          "min", (double[]){10, 720.0, 10.0}, false);
-  addItem(powerSaverEntryDurationSb);
+  card_power->addItem(powerSaverEntryDurationSb);
+  addItem(card_power);
 
   connect(uiState(), &UIState::uiUpdate, this, &PersonalisedPanel::updateState);
 }
@@ -485,12 +544,21 @@ SoftwarePanel::SoftwarePanel(QWidget *parent) : ListWidget(parent) {
     std::system("pkill -1 -f selfdrive.updated");
   });
 
-  QWidget *widgets[] = {versionLbl,       lastUpdateLbl, updateBtn,
-                        gitCommitLbl,     osVersionLbl,  featuresInput,
-                        fingerprintInput, branchInput};
-  for (QWidget *w : widgets) {
-    addItem(w);
-  }
+  setDrawDividers(false);
+
+  SettingsCard *card_ver = new SettingsCard("Software & Updates", this);
+  card_ver->addItem(versionLbl);
+  card_ver->addItem(lastUpdateLbl);
+  card_ver->addItem(updateBtn);
+  card_ver->addItem(gitCommitLbl);
+  card_ver->addItem(osVersionLbl);
+  addItem(card_ver);
+
+  SettingsCard *card_config = new SettingsCard("Vehicle & Repository Configuration", this);
+  card_config->addItem(fingerprintInput);
+  card_config->addItem(branchInput);
+  card_config->addItem(featuresInput);
+  addItem(card_config);
 
   fs_watch = new QFileSystemWatcher(this);
   QObject::connect(fs_watch, &QFileSystemWatcher::fileChanged,
@@ -649,8 +717,12 @@ QWidget *network_panel(QWidget *parent) {
 }
 
 void SettingsWindow::showEvent(QShowEvent *event) {
-  panel_widget->setCurrentIndex(0);
-  nav_btns->buttons()[0]->setChecked(true);
+  int cur = panel_widget ? panel_widget->currentIndex() : 0;
+  if (!nav_btns || cur < 0 || cur >= nav_btns->buttons().size()) {
+    cur = 0;
+  }
+  if (panel_widget) panel_widget->setCurrentIndex(cur);
+  if (nav_btns && cur < nav_btns->buttons().size()) nav_btns->buttons()[cur]->setChecked(true);
 }
 
 SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
@@ -661,28 +733,37 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
   sidebar_layout->setMargin(0);
   panel_widget = new QStackedWidget();
   panel_widget->setStyleSheet(R"(
-    border-radius: 1px;
-    background-color: #202020;
+    border: none;
+    background-color: #07090E;
     color: #FFFFFF;
   )");
 
-  // close button
-  QPushButton *close_btn = new QPushButton("×");
+  // close button (circular frosted button with back arrow)
+  QPushButton *close_btn = new QPushButton("←");
   close_btn->setStyleSheet(R"(
     QPushButton {
-      font-size: 90px;
-      padding-bottom: 20px;
-      border: 0px black solid;
-      border-radius: 75px;
-      background-color: black;
+      font-size: 44px;
+      font-weight: bold;
+      border: 2px solid rgba(0, 245, 212, 0.45);
+      border-radius: 40px;
+      background-color: rgba(15, 22, 32, 0.9);
+      color: #00F5D4;
+      padding-bottom: 6px;
+    }
+    QPushButton:hover {
+      border-color: #00F5D4;
+      background-color: rgba(0, 245, 212, 0.18);
       color: #FFFFFF;
     }
     QPushButton:pressed {
-      background-color: #3B3B3B;
+      border-color: #00F5D4;
+      background-color: rgba(0, 245, 212, 0.4);
+      color: #FFFFFF;
     }
   )");
-  close_btn->setFixedSize(100, 100);
-  sidebar_layout->addWidget(close_btn, 0, Qt::AlignTop);
+  close_btn->setFixedSize(80, 80);
+  sidebar_layout->addWidget(close_btn, 0, Qt::AlignLeft);
+  sidebar_layout->addSpacing(16);
   QObject::connect(close_btn, &QPushButton::clicked, this,
                    &SettingsWindow::closeSettings);
 
@@ -693,56 +774,65 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
 
   struct NavItem {
     QString name;
-    QPixmap icon;
+    QString icon_path;
     QWidget *w;
   };
 
   std::vector<NavItem> panels = {
-      {"   Device", loadPixmap("../assets/kommu/device.png", {60, 60}), device},
-      {"   Network", loadPixmap("../assets/kommu/network.png", {60, 60}),
-       network_panel(this)},
-      {"   Toggles", loadPixmap("../assets/kommu/toggles.png", {60, 60}),
-       new TogglesPanel(this)},
-      {"   Personalised",
-       loadPixmap("../assets/kommu/personalised.png", {60, 60}),
-       new PersonalisedPanel(this)},
-      {"   Software", loadPixmap("../assets/kommu/software.png", {60, 60}),
-       new SoftwarePanel(this)},
+      {"Device", "../assets/kommu/device.png", device},
+      {"Network", "../assets/kommu/network.png", network_panel(this)},
+      {"Toggles", "../assets/kommu/toggles.png", new TogglesPanel(this)},
+      {"Personalised", "../assets/kommu/personalised.png", new PersonalisedPanel(this)},
+      {"Software", "../assets/kommu/software.png", new SoftwarePanel(this)},
   };
 
-  const int padding = 55;
-
   nav_btns = new QButtonGroup(this);
-  for (auto &[name, icon, panel] : panels) {
-    auto btn = new QPushButton(icon, name);
+  for (auto &[name, icon_path, panel] : panels) {
+    auto btn = new QPushButton(name);
     btn->setCheckable(true);
     btn->setChecked(nav_btns->buttons().size() == 0);
-    btn->setFixedHeight(175);
-    btn->setStyleSheet(QString(R"(
+    btn->setFixedHeight(92);
+
+    QPixmap raw_pix = loadPixmap(icon_path, {40, 40});
+    if (!raw_pix.isNull()) {
+      QIcon btn_icon;
+      btn_icon.addPixmap(tintPixmap(raw_pix, QColor(148, 163, 184)), QIcon::Normal, QIcon::Off);
+      btn_icon.addPixmap(tintPixmap(raw_pix, QColor(10, 13, 20)), QIcon::Normal, QIcon::On);
+      btn_icon.addPixmap(tintPixmap(raw_pix, QColor(255, 255, 255)), QIcon::Active, QIcon::Off);
+      btn->setIcon(btn_icon);
+      btn->setIconSize(QSize(40, 40));
+    }
+
+    btn->setStyleSheet(R"(
       QPushButton {
-        color: grey;
+        color: #94A3B8;
         border: none;
-        background: none;
-        font-size: 50px;
+        border-radius: 28px;
+        background: transparent;
+        font-size: 36px;
         font-weight: 500;
-        padding-top: 50px;
-        padding-bottom: %1px;
+        text-align: left;
+        padding-left: 28px;
+      }
+      QPushButton:hover:!checked {
+        color: #FFFFFF;
+        background-color: rgba(255, 255, 255, 0.06);
       }
       QPushButton:checked {
-        color: white;
+        color: #0A0D14;
+        background-color: #00F5D4;
+        font-weight: 700;
       }
       QPushButton:pressed {
-        color: #ADADAD;
+        background-color: rgba(0, 245, 212, 0.85);
       }
-    )")
-                           .arg(padding));
+    )");
 
     nav_btns->addButton(btn);
-    sidebar_layout->addWidget(btn, 0, Qt::AlignLeft);
+    sidebar_layout->addWidget(btn);
 
-    const int lr_margin =
-        name != "Network" ? 50 : 0; // Network panel handles its own margins
-    panel->setContentsMargins(lr_margin, 25, lr_margin, 25);
+    const int lr_margin = name != "Network" ? 36 : 0;
+    panel->setContentsMargins(lr_margin, 20, lr_margin, 20);
 
     ScrollView *panel_frame = new ScrollView(panel, this);
     panel_widget->addWidget(panel_frame);
@@ -752,23 +842,27 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
       panel_widget->setCurrentWidget(w);
     });
   }
-  sidebar_layout->setSpacing(75);
-  sidebar_layout->setContentsMargins(25, 50, 100, 50);
+
+  sidebar_layout->addStretch();
+  sidebar_layout->setSpacing(16);
+  sidebar_layout->setContentsMargins(32, 32, 20, 32);
 
   // main settings layout, sidebar + main panel
   QHBoxLayout *main_layout = new QHBoxLayout(this);
+  main_layout->setContentsMargins(0, 0, 0, 0);
+  main_layout->setSpacing(0);
 
-  sidebar_widget->setFixedWidth(500);
+  sidebar_widget->setFixedWidth(440);
   main_layout->addWidget(sidebar_widget);
   main_layout->addWidget(panel_widget);
 
   setStyleSheet(R"(
     * {
+      font-family: Inter, Glacial Indifference, sans-serif;
       color: white;
-      font-size: 50px;
     }
     SettingsWindow {
-      background-color: black;
+      background-color: #07090E;
     }
   )");
 }

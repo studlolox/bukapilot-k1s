@@ -77,7 +77,7 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent) {
   });
 
   if (getenv("UI_TEST_SETTINGS") != nullptr) {
-    openSettings(0);
+    openSettings(atoi(getenv("UI_TEST_SETTINGS")));
   }
 
   if (getenv("UI_TEST_SCREENSHOT") != nullptr) {

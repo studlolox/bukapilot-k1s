@@ -181,6 +181,25 @@ private:
   Params params;
 };
 
+// Grouped Settings Card container with specular reflection and internal dividers
+class SettingsCard : public QFrame {
+  Q_OBJECT
+
+public:
+  explicit SettingsCard(const QString &title = "", QWidget *parent = nullptr);
+  void addItem(QWidget *w);
+  void addItem(QLayout *layout);
+
+protected:
+  void paintEvent(QPaintEvent *event) override;
+
+private:
+  QString title_text;
+  QVBoxLayout *outer_layout;
+  QVBoxLayout *inner_layout;
+  QLabel *title_label = nullptr;
+};
+
 class ListWidget : public QWidget {
   Q_OBJECT
  public:
@@ -189,23 +208,26 @@ class ListWidget : public QWidget {
     outer_layout.setSpacing(0);
     outer_layout.addLayout(&inner_layout);
     inner_layout.setMargin(0);
-    inner_layout.setSpacing(50); // default spacing is 25
+    inner_layout.setSpacing(32); // spacing between items/cards
     outer_layout.addStretch();
   }
   inline void addItem(QWidget *w) { inner_layout.addWidget(w); }
   inline void addItem(QLayout *layout) { inner_layout.addLayout(layout); }
   inline void setSpacing(int spacing) { inner_layout.setSpacing(spacing); }
+  inline void setDrawDividers(bool enable) { draw_dividers = enable; update(); }
 
 private:
   void paintEvent(QPaintEvent *) override {
+    if (!draw_dividers) return;
     QPainter p(this);
-    p.setPen(Qt::gray);
+    p.setPen(QColor(255, 255, 255, 30));
     for (int i = 0; i < inner_layout.count() - 1; ++i) {
       QRect r = inner_layout.itemAt(i)->geometry();
       int bottom = r.bottom() + inner_layout.spacing() / 2;
       p.drawLine(r.left() + 40, bottom, r.right() - 40, bottom);
     }
   }
+  bool draw_dividers = true;
   QVBoxLayout outer_layout;
   QVBoxLayout inner_layout;
 };
