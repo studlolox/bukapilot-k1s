@@ -204,8 +204,8 @@ Tropical sun creates reflections from the Corolla Cross dashboard onto the winds
 │   └── [✓] Calibrate speed-scheduled PID_CROSS tune (tunes.py & interface.py)
 │
 ├── Phase 2: Hybrid Longitudinal Refinement
-│   ├── [ ] Smooth 15 km/h to 0 km/h deceleration transition in LongTunes.CROSS_HYBRID
-│   └── [ ] Implement auto-resume from standstill (> 2.5m lead movement)
+│   ├── [✓] Smooth 15 km/h to 0 km/h deceleration transition in LongTunes.CROSS_HYBRID
+│   └── [✓] Implement auto-resume from standstill (> 2.5m lead movement)
 │
 ├── Phase 3: TSS2 Sensor & CAN Integration
 │   ├── [ ] Connect CAN BSM signals to Assisted Lane Change logic

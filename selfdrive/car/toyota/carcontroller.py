@@ -162,8 +162,8 @@ class CarController():
             if CS.out.cruiseState.standstill or pcm_accel_cmd < 0.1:
               pcm_accel_cmd = -1.5
           elif CS.out.vEgo < 1.5 and lead:
-            # Low-speed anti-surge protection: prevent vision noise from causing forward acceleration spikes near lead
-            pcm_accel_cmd = min(pcm_accel_cmd, 0.0)
+            # Low-speed anti-surge protection: smooth creep acceleration out of standstill, avoiding sudden torque spikes near lead
+            pcm_accel_cmd = clip(pcm_accel_cmd, CarControllerParams.ACCEL_MIN, 1.0)
 
         can_sends.append(create_accel_command(self.packer, pcm_accel_cmd, pcm_cancel_cmd, self.standstill_req, lead, CS.acc_type, CS.distance_btn))
         self.accel = pcm_accel_cmd

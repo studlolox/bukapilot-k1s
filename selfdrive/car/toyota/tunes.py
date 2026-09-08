@@ -56,11 +56,11 @@ def set_long_tune(tune, name):
     tune.kiV = [.35, .23, .20, .17, .1]
   elif name == LongTunes.CROSS_HYBRID:
     tune.deadzoneBP = [0., 8.05]
-    tune.deadzoneV = [.0, .14]
+    tune.deadzoneV = [0.0, 0.12]
     tune.kpBP = [0., 5., 20.]
-    tune.kpV = [1.4, 1.2, 0.7]
+    tune.kpV = [1.2, 1.1, 0.65]
     tune.kiBP = [0., 5., 12., 20., 27.]
-    tune.kiV = [.35, .23, .20, .17, .1]
+    tune.kiV = [0.28, 0.22, 0.18, 0.15, 0.08]
   # Default longitudinal tune
   elif name == LongTunes.TSS:
     tune.deadzoneBP = [0., 9.]
