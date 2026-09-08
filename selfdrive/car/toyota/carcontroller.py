@@ -159,11 +159,11 @@ class CarController():
       elif CS.CP.openpilotLongitudinalControl:
 
         if self.force_use_stock_acc:
-          if not CS.out.standstill or CS.stock_acc_cmd > 0.1:
-            # Let stock TSS ACC smoothly manage car following and deceleration down to stop, or resume from standstill
+          if not CS.out.standstill or (not CS.out.cruiseState.standstill and CS.stock_acc_cmd > 0.1):
+            # Let stock TSS ACC smoothly manage car following and deceleration down to stop, or resume from standstill if not latched by ResumeWithRes
             pcm_accel_cmd = CS.stock_acc_cmd
           else:
-            # At complete standstill, lock firm brake hold (-1.5 m/s^2) to prevent forward creep until stock ACC commands motion
+            # At complete standstill or when held waiting for RES+, lock firm brake hold (-1.5 m/s^2) to prevent forward creep
             pcm_accel_cmd = -1.5
         else:
           # Pure openpilot longitudinal control

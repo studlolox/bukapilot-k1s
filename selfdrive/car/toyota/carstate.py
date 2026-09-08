@@ -78,7 +78,7 @@ class CarState(CarStateBase):
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
     ret.vEgoCluster = cp.vl["BODY_CONTROL_STATE_2"]["UI_SPEED"] * CV.KPH_TO_MS * HUD_MULTIPLIER
 
-    ret.standstill = ret.vEgoRaw < 0.001
+    ret.standstill = ret.vEgoRaw < 0.02
 
     ret.steeringAngleDeg = cp.vl["STEER_ANGLE_SENSOR"]["STEER_ANGLE"] + cp.vl["STEER_ANGLE_SENSOR"]["STEER_FRACTION"]
     torque_sensor_angle_deg = cp.vl["STEER_TORQUE_SENSOR"]["STEER_ANGLE"]
@@ -144,6 +144,9 @@ class CarState(CarStateBase):
       self.low_speed_lockout = cp.vl["PCM_CRUISE_2"]["LOW_SPEED_LOCKOUT"] == 2
 
     self.pcm_acc_status = cp.vl["PCM_CRUISE"]["CRUISE_STATE"]
+    ret.cruiseState.enabled = bool(cp.vl["PCM_CRUISE"]["CRUISE_ACTIVE"])
+    ret.cruiseState.nonAdaptive = cp.vl["PCM_CRUISE"]["CRUISE_STATE"] in (1, 2, 3, 4, 5, 6)
+
     if self.CP.carFingerprint in NO_STOP_TIMER_CAR or self.CP.enableGasInterceptor or self.CP.carFingerprint in (CAR.LEXUS_NX):
       # ignore standstill in hybrid vehicles, since pcm allows to restart without
       # receiving any special command. Also if interceptor is detected
@@ -155,27 +158,25 @@ class CarState(CarStateBase):
     # until driver resumes via RES+ switch or accelerator pedal
     if self.resume_with_res:
       res_pressed = (
-        (self.prev_set_speed > 0 and ret.cruiseState.speed != self.prev_set_speed) or
-        (self.prev_speed_cluster > 0 and ret.cruiseState.speedCluster != self.prev_speed_cluster) or
-        (self.prev_pcm_acc_status == 7 and self.pcm_acc_status == 8)
+        self.pcm_acc_status == 9 or  # TSS2 steering wheel RES+ button clicked ("adaptive click up")
+        (self.prev_pcm_acc_status == 7 and self.pcm_acc_status == 8) or
+        (self.prev_set_speed > 0 and ret.cruiseState.speed != self.prev_set_speed)
       )
       if ret.standstill:
         if not self.standstill_latched and not (ret.gasPressed or res_pressed):
           self.standstill_latched = True
-        elif ret.gasPressed or res_pressed:
-          self.standstill_latched = False
-
-        if self.standstill_latched:
-          ret.cruiseState.standstill = True
-      else:
+      elif not ret.cruiseState.enabled or ret.gasPressed or res_pressed or ret.vEgoRaw > 0.25:
         self.standstill_latched = False
+
+      if self.standstill_latched:
+        if ret.gasPressed or res_pressed or not ret.cruiseState.enabled:
+          self.standstill_latched = False
+        else:
+          ret.cruiseState.standstill = True
 
     self.prev_set_speed = ret.cruiseState.speed
     self.prev_speed_cluster = ret.cruiseState.speedCluster
     self.prev_pcm_acc_status = self.pcm_acc_status
-
-    ret.cruiseState.enabled = bool(cp.vl["PCM_CRUISE"]["CRUISE_ACTIVE"])
-    ret.cruiseState.nonAdaptive = cp.vl["PCM_CRUISE"]["CRUISE_STATE"] in (1, 2, 3, 4, 5, 6)
 
     ret.genericToggle = bool(cp.vl["LIGHT_STALK"]["AUTO_HIGH_BEAM"])
     ret.stockAeb = bool(cp_cam.vl["PRE_COLLISION"]["PRECOLLISION_ACTIVE"] and cp_cam.vl["PRE_COLLISION"]["FORCE"] < -1e-5)
