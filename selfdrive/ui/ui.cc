@@ -191,8 +191,16 @@ static void update_state(UIState *s) {
 }
 
 void ui_update_params(UIState *s) {
-  s->scene.is_metric = Params().getBool("IsMetric");
-  s->scene.end_to_end = Params().getBool("EndToEndToggle");
+  Params params;
+  s->scene.is_metric = params.getBool("IsMetric");
+  s->scene.end_to_end = params.getBool("EndToEndToggle");
+  s->scene.use_stock_acc = params.getBool("UseStockAcc");
+  try {
+    std::string v = params.get("VisionTurnSpeedControl");
+    s->scene.vtsc_mode = v.empty() ? 1 : std::stoi(v);
+  } catch (...) {
+    s->scene.vtsc_mode = 1;
+  }
 }
 
 void UIState::updateStatus() {
@@ -216,6 +224,7 @@ void UIState::updateStatus() {
       status = STATUS_DISENGAGED;
       scene.started_frame = sm->frame;
       scene.end_to_end = Params().getBool("EndToEndToggle");
+      scene.use_stock_acc = Params().getBool("UseStockAcc");
       wide_camera = Hardware::TICI() ? Params().getBool("EnableWideCamera") : false;
     }
     started_prev = scene.started;

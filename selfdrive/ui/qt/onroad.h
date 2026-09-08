@@ -35,6 +35,9 @@ class OnroadHud : public QWidget {
   Q_PROPERTY(bool hasLead MEMBER hasLead NOTIFY valueChanged);
   Q_PROPERTY(float modelConfidence MEMBER modelConfidence NOTIFY valueChanged);
   Q_PROPERTY(bool experimentalMode MEMBER experimental_mode NOTIFY valueChanged);
+  Q_PROPERTY(bool useStockAcc MEMBER useStockAcc NOTIFY valueChanged);
+  Q_PROPERTY(int vtscMode MEMBER vtscMode NOTIFY valueChanged);
+  Q_PROPERTY(bool hasLongControl MEMBER hasLongControl NOTIFY valueChanged);
 
   Q_PROPERTY(float aEgo MEMBER aEgo NOTIFY valueChanged);
 
@@ -58,6 +61,7 @@ private:
   void drawBottomTorqueArcBar(QPainter &p, int cx, int y, float torque, bool saturated, float max_half_w = 210.0f);
   void drawTurnIntent(QPainter &p, int cx, int cy, int dir);
   void drawStatusCapsule(QPainter &p, const QRect &rc, const QString &label, const QString &val, const QColor &color);
+  void drawAdasCapsule(QPainter &p, const QRect &rc);
   void drawActionBtn(QPainter &p, int x, int y, QPixmap &img, bool active);
   void drawModeBtn(QPainter &p, int x, int y, bool is_experimental);
   void drawDriverMonitoringDisc(QPainter &p, int x, int y, bool active, float awareness, bool distracted, bool face_detected, float yaw, float pitch);
@@ -93,6 +97,9 @@ private:
   bool hasLead = false;
   float modelConfidence = 1.0f;
   bool experimental_mode = false;
+  bool useStockAcc = false;
+  int vtscMode = 1;
+  bool hasLongControl = true;
   float dmAwareness = 1.0f;
   bool dmDistracted = false;
   bool dmFaceDetected = false;

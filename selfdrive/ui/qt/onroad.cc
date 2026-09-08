@@ -459,11 +459,16 @@ void OnroadHud::updateState(const UIState &s) {
   setProperty("hideDM",
               cs.getAlertSize() != cereal::ControlsState::AlertSize::NONE);
   setProperty("status", s.status);
+  setProperty("useStockAcc", s.scene.use_stock_acc);
+  setProperty("vtscMode", s.scene.vtsc_mode);
+  setProperty("hasLongControl", s.scene.longitudinal_control);
 
   // update engageability and DM icons at 2Hz
   if (getenv("FORCE_ONROAD") != NULL) {
     setProperty("engageable", true);
     setProperty("dmActive", true);
+    setProperty("hasLongControl", true);
+    setProperty("useStockAcc", Params().getBool("UseStockAcc"));
   } else if (sm.frame % (UI_FREQ / 2) == 0) {
     setProperty("engageable", cs.getEngageable() || cs.getEnabled());
     setProperty("dmActive", sm["driverMonitoringState"]
@@ -521,6 +526,19 @@ bool OnroadHud::manualMouseEvent(QMouseEvent *e) {
   if (max_rc.contains(pt) || max_rc.contains(e->pos())) {
     int next_bars = (distanceBars % 3) + 1;
     setProperty("distanceBars", next_bars);
+    return true;
+  }
+
+  // Tap ADAS System capsule to toggle between Stock ACC and EZPilot Longitudinal
+  int temp_w = 210;
+  int adas_w = 330;
+  QRect adas_rc(rect().right() - temp_w - 45 - adas_w - 20, 35, adas_w, 140);
+  if (adas_rc.contains(pt) || adas_rc.contains(e->pos())) {
+    bool next_stock = !useStockAcc;
+    Params().putBool("UseStockAcc", next_stock);
+    uiState()->scene.use_stock_acc = next_stock;
+    setProperty("useStockAcc", next_stock);
+    update();
     return true;
   }
 
@@ -916,6 +934,60 @@ void OnroadHud::drawStatusCapsule(QPainter &p, const QRect &rc,
   p.drawText(rc, Qt::AlignCenter, val);
 }
 
+void OnroadHud::drawAdasCapsule(QPainter &p, const QRect &rc) {
+  p.save();
+  p.setRenderHint(QPainter::Antialiasing);
+
+  drawCapsule(p, rc);
+
+  int r = rc.height() / 2;
+  bool is_engaged = (status == STATUS_ENGAGED);
+
+  QColor accent_col;
+  QString main_mode_str;
+
+  if (useStockAcc || !hasLongControl) {
+    accent_col = is_engaged ? QColor(56, 189, 248) : QColor(148, 163, 184); // Sky Blue : Slate
+    main_mode_str = "STOCK ACC";
+  } else {
+    accent_col = is_engaged ? QColor(0, 245, 212) : QColor(148, 163, 184);  // Neon Mint : Slate
+    main_mode_str = "EZPILOT";
+  }
+
+  // Active neon rim when engaged
+  if (is_engaged) {
+    p.setBrush(Qt::NoBrush);
+    p.setPen(QPen(QColor(accent_col.red(), accent_col.green(), accent_col.blue(), 50), 6));
+    p.drawRoundedRect(rc, r, r);
+    p.setPen(QPen(accent_col, 2.5));
+    p.drawRoundedRect(rc, r, r);
+  }
+
+  // 1. Top Header Label: ADAS SYSTEM
+  configFont(p, "Inter", 18, "Bold");
+  p.setPen(QColor(148, 163, 184, 210));
+  p.drawText(QRect(rc.left(), rc.top() + 16, rc.width(), 24), Qt::AlignCenter, "ADAS SYSTEM");
+
+  // 2. Main Driving System Title
+  configFont(p, "Inter", 32, "Bold");
+  p.setPen(accent_col);
+  p.drawText(QRect(rc.left(), rc.top() + 44, rc.width(), 44), Qt::AlignCenter, main_mode_str);
+
+  // 3. Sub-Telemetry Row: Steering + Path Guidance + VTSC
+  QString steer_str = lateralActive ? "EZ STEER" : (steerOverride ? "USER" : "STOCK");
+  QString path_str = experimental_mode ? "E2E" : "LANES";
+  QString telemetry = steer_str + " • " + path_str;
+  if (vtscMode > 0) {
+    telemetry += " • VTSC";
+  }
+
+  configFont(p, "Inter", 20, "SemiBold");
+  p.setPen(QColor(203, 213, 225, 220));
+  p.drawText(QRect(rc.left(), rc.top() + 94, rc.width(), 28), Qt::AlignCenter, telemetry);
+
+  p.restore();
+}
+
 void OnroadHud::drawActionBtn(QPainter &p, int x, int y, QPixmap &img,
                               bool active) {
   p.save();
@@ -1059,8 +1131,13 @@ void OnroadHud::paintEvent(QPaintEvent *event) {
   // 3. Current Speed (top-center)
   drawCurrentSpeed(p, rect().center().x(), 160);
 
-  // 4. TEMP / Climate capsule (top-right) - 230x140
-  int temp_w = 230;
+  // 4. ADAS System & Driving Mode capsule (top-right, preceding TEMP) - 330x140
+  int temp_w = 210;
+  int adas_w = 330;
+  QRect adas_rc(rect().right() - temp_w - 45 - adas_w - 20, 35, adas_w, 140);
+  drawAdasCapsule(p, adas_rc);
+
+  // 5. TEMP / Climate capsule (top-right) - 210x140
   QRect temp_rc(rect().right() - temp_w - 45, 35, temp_w, 140);
   QColor temp_col = QColor(240, 243, 246);
   if (thermalStatus == (int)cereal::DeviceState::ThermalStatus::YELLOW) {

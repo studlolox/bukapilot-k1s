@@ -160,6 +160,9 @@ public:
       if (key == "EndToEndToggle") {
         uiState()->scene.end_to_end = state;
       }
+      if (key == "UseStockAcc") {
+        uiState()->scene.use_stock_acc = state;
+      }
       if (this->restart_required && uiState()->scene.started) {
         ConfirmationDialog::alert("Need to restart for setting to take effect", this);
       }
