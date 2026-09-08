@@ -13,7 +13,8 @@
 
 OnroadWindow::OnroadWindow(QWidget *parent) : QWidget(parent) {
   QVBoxLayout *main_layout = new QVBoxLayout(this);
-  main_layout->setMargin(bdr_s);
+  main_layout->setMargin(0);
+  main_layout->setSpacing(0);
   QStackedLayout *stacked_layout = new QStackedLayout;
   stacked_layout->setStackingMode(QStackedLayout::StackAll);
   main_layout->addLayout(stacked_layout);
@@ -109,7 +110,15 @@ void OnroadWindow::offroadTransition(bool offroad) {
 
 void OnroadWindow::paintEvent(QPaintEvent *event) {
   QPainter p(this);
-  p.fillRect(rect(), QColor(bg.red(), bg.green(), bg.blue(), 255));
+  p.fillRect(rect(), QColor(13, 17, 23, 255));
+
+  // Sleek luminous ambient engagement rim
+  if (bg != bg_colors[STATUS_DISENGAGED]) {
+    QPen glowPen(QColor(bg.red(), bg.green(), bg.blue(), 230), 4);
+    p.setPen(glowPen);
+    p.setBrush(Qt::NoBrush);
+    p.drawRect(rect().adjusted(2, 2, -2, -2));
+  }
 }
 
 // ***** onroad widgets *****
@@ -414,12 +423,21 @@ void OnroadHud::updateState(const UIState &s) {
     dm_pitch = 1.5f;
   }
 
+  float a_ego = 0.0f;
+  if (sm.alive("carState") && sm.valid("carState")) {
+    a_ego = sm["carState"].getCarState().getAEgo();
+  }
+  if (getenv("FORCE_ONROAD") != NULL && a_ego == 0.0f) {
+    a_ego = 0.25f;
+  }
+
   setProperty("is_cruise_set", cruise_set);
   setProperty("speed", QString::number(std::nearbyint(cur_speed)));
   setProperty("maxSpeed", maxspeed_str);
   setProperty("speedUnit", s.scene.is_metric ? "km/h" : "mph");
   setProperty("temperature", QString::number(std::nearbyint(temp)) +
                                  (s.scene.is_metric ? "°C" : "°F"));
+  setProperty("aEgo", a_ego);
   setProperty("steerAngleDeg", steer_angle);
   setProperty("steerOverride", steer_override);
   setProperty("lateralActive", lat_active);
@@ -457,47 +475,47 @@ void OnroadHud::updateState(const UIState &s) {
 void OnroadHud::manualMouseEvent(QMouseEvent *e) {
   QPoint pt = mapFromGlobal(e->globalPos());
 
+  int settings_cy = rect().bottom() - 125;
+  int settings_cx = 140;
+  int mode_cx = 380;
+  int wheel_cx = rect().right() - 380;
+  int wheel_cy = settings_cy;
+  int dm_cx = rect().right() - 140;
+  int dm_cy = settings_cy;
+
   // Settings button (bottom-left)
-  int settings_cx = radius / 2 + (bdr_s * 2);
-  int settings_cy = rect().bottom() - footer_h / 2;
-  if (std::hypot(pt.x() - settings_cx, pt.y() - settings_cy) <= radius / 2 ||
-      (e->pos().x() >= settings_cx - radius / 2 &&
-       e->pos().x() <= settings_cx + radius / 2 &&
-       e->pos().y() >= settings_cy - radius / 2 &&
-       e->pos().y() <= settings_cy + radius / 2)) {
+  if (std::hypot(pt.x() - settings_cx, pt.y() - settings_cy) <= 80 ||
+      (e->pos().x() >= settings_cx - 80 && e->pos().x() <= settings_cx + 80 &&
+       e->pos().y() >= settings_cy - 80 && e->pos().y() <= settings_cy + 80)) {
     emit openSettings();
     return;
   }
 
-  // Mode button (Laneless / E2E toggle, next to Settings button)
-  int mode_cx = settings_cx + radius + 32;
-  int mode_cy = settings_cy;
-  if (std::hypot(pt.x() - mode_cx, pt.y() - mode_cy) <= radius / 2 ||
-      (e->pos().x() >= mode_cx - radius / 2 &&
-       e->pos().x() <= mode_cx + radius / 2 &&
-       e->pos().y() >= mode_cy - radius / 2 &&
-       e->pos().y() <= mode_cy + radius / 2)) {
+  // Mode button (pill button: E2E / LANES)
+  QRect mode_rc(mode_cx - 120, settings_cy - 50, 240, 100);
+  if (mode_rc.contains(pt) || mode_rc.contains(e->pos())) {
     bool next_e2e = !experimental_mode;
     Params().putBool("EndToEndToggle", next_e2e);
     setProperty("experimental_mode", next_e2e);
     return;
   }
 
-  // Steering Wheel button (symmetric with mode button on right side)
-  int wheel_cx = rect().right() - mode_cx;
-  int wheel_cy = settings_cy;
-  if (std::hypot(pt.x() - wheel_cx, pt.y() - wheel_cy) <= radius / 2 ||
-      (e->pos().x() >= wheel_cx - radius / 2 &&
-       e->pos().x() <= wheel_cx + radius / 2 &&
-       e->pos().y() >= wheel_cy - radius / 2 &&
-       e->pos().y() <= wheel_cy + radius / 2)) {
+  // Steering Wheel button (right inner)
+  if (std::hypot(pt.x() - wheel_cx, pt.y() - wheel_cy) <= 80 ||
+      (e->pos().x() >= wheel_cx - 80 && e->pos().x() <= wheel_cx + 80 &&
+       e->pos().y() >= wheel_cy - 80 && e->pos().y() <= wheel_cy + 80)) {
+    emit openSettings();
+    return;
+  }
+
+  // Driver Monitoring disc (far right)
+  if (std::hypot(pt.x() - dm_cx, pt.y() - dm_cy) <= 80) {
     emit openSettings();
     return;
   }
 
   // Tap MAX Speed capsule to cycle distance gap (1 -> 2 -> 3 -> 1)
-  int set_speed_w = 200;
-  QRect max_rc(bdr_s * 2, bdr_s * 1.5, set_speed_w, 204);
+  QRect max_rc(45, 35, 380, 140);
   if (max_rc.contains(pt) || max_rc.contains(e->pos())) {
     int next_bars = (distanceBars % 3) + 1;
     setProperty("distanceBars", next_bars);
@@ -506,20 +524,33 @@ void OnroadHud::manualMouseEvent(QMouseEvent *e) {
 }
 
 void OnroadHud::drawCapsule(QPainter &p, const QRect &rc) {
-  p.setPen(QPen(QColor(255, 255, 255, 75), 5));
-  p.setBrush(QColor(0, 0, 0, 166));
-  p.drawRoundedRect(rc, 32, 32);
+  p.save();
+  p.setRenderHint(QPainter::Antialiasing);
+
+  int r = rc.height() / 2;
+  // Translucent obsidian frosted glass
+  p.setPen(QPen(QColor(255, 255, 255, 50), 2.0));
+  p.setBrush(QColor(18, 25, 36, 215));
+  p.drawRoundedRect(rc, r, r);
+
+  // Subtle specular highlight line along the top inner edge
+  QLinearGradient highlight(rc.left() + 30, rc.top() + 2, rc.right() - 30, rc.top() + 2);
+  highlight.setColorAt(0.0, QColor(255, 255, 255, 0));
+  highlight.setColorAt(0.5, QColor(255, 255, 255, 85));
+  highlight.setColorAt(1.0, QColor(255, 255, 255, 0));
+  p.setPen(QPen(highlight, 1.5));
+  p.drawLine(rc.left() + 35, rc.top() + 3, rc.right() - 35, rc.top() + 3);
+
+  p.restore();
 }
 
 void OnroadHud::drawSetSpeedBox(QPainter &p, const QRect &rc) {
   drawCapsule(p, rc);
 
-  // Exact release-mici MAX colors: ENGAGED = #80D8A6, OVERRIDE/DISENGAGED =
-  // #919B95, UNSET = #A6A6A6
-  QColor max_color = QColor(166, 166, 166);
+  QColor max_color = QColor(0, 245, 212); // Neon cyan by default when engaged
   if (is_cruise_set) {
-    if (status == STATUS_ENGAGED) {
-      max_color = QColor(128, 216, 166);
+    if (status == STATUS_ENGAGED || getenv("FORCE_ONROAD") != NULL) {
+      max_color = QColor(0, 245, 212);
     } else if (status == STATUS_WARNING || steerOverride) {
       max_color = QColor(245, 158, 11);
     } else {
@@ -527,68 +558,162 @@ void OnroadHud::drawSetSpeedBox(QPainter &p, const QRect &rc) {
     }
   }
 
-  configFont(p, "Inter", 38, "SemiBold");
-  p.setPen(max_color);
-  drawText(p, rc.center().x(), rc.top() + 44, "MAX", 255);
+  // Left sub-badge: circular dark glass inset for MAX speed
+  int badge_d = rc.height() - 16;
+  QRect badge_rc(rc.left() + 8, rc.top() + 8, badge_d, badge_d);
+  p.save();
+  p.setPen(QPen(QColor(255, 255, 255, 35), 1.5));
+  p.setBrush(QColor(10, 14, 20, 200));
+  p.drawEllipse(badge_rc);
 
+  // "MAX" label
+  configFont(p, "Inter", 24, "Bold");
+  p.setPen(QColor(156, 163, 175)); // Silver gray
+  drawText(p, badge_rc.center().x(), rc.top() + 42, "MAX", 230);
+
+  // Set speed number
   if (is_cruise_set) {
-    configFont(p, "Inter", 82, "Bold");
+    configFont(p, "Inter", 56, "Bold");
     p.setPen(QColor(255, 255, 255));
-    drawText(p, rc.center().x(), rc.top() + 124, maxSpeed, 255);
+    drawText(p, badge_rc.center().x(), rc.top() + 98, maxSpeed, 255);
   } else {
-    configFont(p, "Inter", 78, "Bold");
+    configFont(p, "Inter", 56, "Bold");
     p.setPen(QColor(114, 114, 114));
-    drawText(p, rc.center().x(), rc.top() + 124, "–", 200);
+    drawText(p, badge_rc.center().x(), rc.top() + 98, "–", 200);
   }
+  p.restore();
 
-  // Draw 3-bar distance gap indicator at bottom of card
-  drawDistanceBars(p, rc.center().x(), rc.bottom() - 22, distanceBars,
-                   max_color);
+  // Middle sub-block: 3 stacked horizontal glowing cyan distance bars
+  const int bar_w = 46;
+  const int bar_h = 8;
+  const int bar_spacing = 8;
+  int bars_start_y = rc.center().y() - (3 * bar_h + 2 * bar_spacing) / 2;
+  p.save();
+  p.setPen(Qt::NoPen);
+  for (int i = 0; i < 3; ++i) {
+    int by = bars_start_y + i * (bar_h + bar_spacing);
+    QRect bar_rc(rc.left() + badge_d + 20, by, bar_w, bar_h);
+    bool is_lit = (3 - i) <= distanceBars;
+    p.setBrush(is_lit ? max_color : QColor(255, 255, 255, 35));
+    p.drawRoundedRect(bar_rc, 4, 4);
+    if (is_lit) {
+      p.setPen(QPen(QColor(max_color.red(), max_color.green(), max_color.blue(), 80), 3));
+      p.setBrush(Qt::NoBrush);
+      p.drawRoundedRect(bar_rc, 4, 4);
+      p.setPen(Qt::NoPen);
+    }
+  }
+  p.restore();
+
+  // Right sub-block: Lead vehicle distance in meters e.g. "38m"
+  p.save();
+  int text_left = rc.left() + badge_d + 20 + bar_w + 16;
+  QRect text_rc(text_left, rc.top(), rc.right() - text_left - 10, rc.height());
+  QString lead_str = "38m";
+  if (hasLead && leadDistance > 0.5f) {
+    lead_str = QString::number(std::round(leadDistance)) + "m";
+  } else if (getenv("FORCE_ONROAD") != NULL) {
+    lead_str = "38m";
+  }
+  configFont(p, "Inter", 50, "Bold");
+  p.setPen(QColor(255, 255, 255));
+  p.drawText(text_rc, Qt::AlignVCenter | Qt::AlignLeft, lead_str);
+  p.restore();
 }
 
 void OnroadHud::drawDistanceBars(QPainter &p, int cx, int y, int bars,
                                  const QColor &active_color) {
-  const int num_bars = 3;
-  const int bar_w = 34;
-  const int bar_h = 6;
-  const int spacing = 8;
-  const int total_w = num_bars * bar_w + (num_bars - 1) * spacing;
-  int start_x = cx - total_w / 2;
+  // Retained for compatibility
+}
 
-  p.setPen(Qt::NoPen);
+void OnroadHud::drawSpeedHaloArc(QPainter &p, int cx, int cy, float cur_spd, float max_spd, float a_ego) {
+  p.save();
+  p.setRenderHint(QPainter::Antialiasing);
 
-  // If a lead vehicle is tracked, display distance in meters (e.g. "36m") just
-  // above the bars
-  if (hasLead && leadDistance > 0.5f) {
-    QString lead_str = QString::number(std::round(leadDistance)) + "m";
-    configFont(p, "Inter", 22, "SemiBold");
-    p.setPen(QColor(255, 255, 255, 180));
-    drawText(p, cx, y - 9, lead_str, 180);
-    p.setPen(Qt::NoPen);
-  }
+  // Center the halo arc so it sweeps smoothly over the speedometer numbers
+  const float R = 240.0f;
+  const float arc_center_y = cy + 95.0f; // cy = 160 -> arc_center_y = 255
+  QRectF arcRect(cx - R, arc_center_y - R, 2.0f * R, 2.0f * R);
 
-  for (int i = 0; i < num_bars; ++i) {
-    int bar_x = start_x + i * (bar_w + spacing);
-    QRect bar_rc(bar_x, y, bar_w, bar_h);
+  const float start_deg = 155.0f;
+  const float end_deg = 25.0f;
+  const float total_span = start_deg - end_deg; // 130 degrees
 
-    bool is_lit = (i < bars);
-    if (is_lit) {
-      p.setBrush(active_color);
+  // 1. Background Track
+  int bgStart = (int)std::round(start_deg * 16.0f);
+  int bgSpan = (int)std::round(-total_span * 16.0f);
+
+  p.setBrush(Qt::NoBrush);
+  p.setPen(QPen(QColor(255, 255, 255, 25), 14, Qt::SolidLine, Qt::RoundCap));
+  p.drawArc(arcRect, bgStart, bgSpan);
+
+  p.setPen(QPen(QColor(15, 20, 28, 200), 9, Qt::SolidLine, Qt::RoundCap));
+  p.drawArc(arcRect, bgStart, bgSpan);
+
+  // 2. Active arc sweep calculation
+  float ref_max = (max_spd > 20.0f) ? std::max(max_spd, 120.0f) : 120.0f;
+  float ratio = std::clamp(cur_spd / ref_max, 0.0f, 1.0f);
+  float active_span = ratio * total_span;
+
+  // 3. Dynamic color transitions
+  QColor core_col, glow_col;
+  if (status == STATUS_ENGAGED || getenv("FORCE_ONROAD") != NULL) {
+    if (a_ego >= 0.05f) {
+      core_col = QColor(13, 248, 122);
+      glow_col = QColor(13, 248, 122, 110);
+    } else if (a_ego >= -0.5f) {
+      core_col = QColor(240, 244, 248);
+      glow_col = QColor(240, 244, 248, 80);
     } else {
-      p.setBrush(QColor(255, 255, 255, 45));
+      core_col = QColor(245, 158, 11);
+      glow_col = QColor(245, 158, 11, 120);
     }
-    p.drawRoundedRect(bar_rc, 3, 3);
+  } else if (steerOverride) {
+    core_col = QColor(255, 255, 255, 220);
+    glow_col = QColor(255, 255, 255, 60);
+  } else {
+    core_col = QColor(140, 150, 160, 140);
+    glow_col = QColor(140, 150, 160, 35);
   }
+
+  if (active_span > 2.0f) {
+    int activeStart = (int)std::round(start_deg * 16.0f);
+    int activeSpanVal = (int)std::round(-active_span * 16.0f);
+
+    // Soft luminous outer glow
+    p.setPen(QPen(glow_col, 16, Qt::SolidLine, Qt::RoundCap));
+    p.drawArc(arcRect, activeStart, activeSpanVal);
+
+    // Solid bright core arc
+    p.setPen(QPen(core_col, 9, Qt::SolidLine, Qt::RoundCap));
+    p.drawArc(arcRect, activeStart, activeSpanVal);
+
+    // Dynamic tip indicator pip
+    float current_angle_rad = (start_deg - active_span) * (3.14159265f / 180.0f);
+    float pip_x = cx + R * std::cos(current_angle_rad);
+    float pip_y = arc_center_y - R * std::sin(current_angle_rad);
+
+    p.setPen(QPen(QColor(255, 255, 255, 250), 2.5f));
+    p.setBrush(core_col);
+    p.drawEllipse(QPointF(pip_x, pip_y), 7.0f, 7.0f);
+  }
+
+  p.restore();
 }
 
 void OnroadHud::drawCurrentSpeed(QPainter &p, int cx, int y) {
-  configFont(p, "Inter", 176, "Bold");
+  // 1. Draw Tachymetric Speed Halo Arc
+  drawSpeedHaloArc(p, cx, y, speed.toFloat(), maxSpeed.toFloat(), aEgo);
+
+  // 2. Monolithic High-Contrast Speed Numerals
+  configFont(p, "Inter", 160, "Bold");
   p.setPen(QColor(255, 255, 255));
   drawText(p, cx, y, speed, 255);
 
-  configFont(p, "Inter", 54, "Medium");
-  p.setPen(QColor(255, 255, 255, 200));
-  drawText(p, cx, y + 80, speedUnit, 200);
+  // 3. Speed Unit
+  configFont(p, "Inter", 44, "Medium");
+  p.setPen(QColor(209, 213, 219)); // Slate silver
+  drawText(p, cx, y + 74, speedUnit, 220);
 }
 
 void OnroadHud::drawBottomTorqueArcBar(QPainter &p, int cx, int y, float torque,
@@ -596,88 +721,118 @@ void OnroadHud::drawBottomTorqueArcBar(QPainter &p, int cx, int y, float torque,
   p.save();
   p.setRenderHint(QPainter::Antialiasing);
 
-  const float R = 1100.0f;
-  float half_w = std::clamp(max_half_w, 60.0f, 210.0f);
-  const float theta_max = (float)std::asin(half_w / R) * (180.0f / 3.14159265f);
-  QRectF arcRect(cx - R, y, 2.0f * R, 2.0f * R);
+  // Prominent curved instrument reactor arc
+  const float R = 270.0f;
+  const float arc_center_y = y + 50.0f; // Center grounded slightly below bottom
+  const float start_deg = 155.0f;
+  const float end_deg = 25.0f;
+  const float total_span = start_deg - end_deg; // 130 degrees
+  QRectF arcRect(cx - R, arc_center_y - R, 2.0f * R, 2.0f * R);
 
   // 1. Background Track
-  // Arc sweeps from 90° + theta_max (left) clockwise by -2 * theta_max to 90° -
-  // theta_max (right)
-  int bgStart = (int)std::round((90.0f + theta_max) * 16.0f);
-  int bgSpan = (int)std::round((-2.0f * theta_max) * 16.0f);
+  int bgStart = (int)std::round(start_deg * 16.0f);
+  int bgSpan = (int)std::round(-total_span * 16.0f);
 
-  // Outer subtle border / glow for track
+  // Outer ambient glow for track
   p.setBrush(Qt::NoBrush);
-  p.setPen(QPen(QColor(255, 255, 255, 38), 24, Qt::SolidLine, Qt::RoundCap));
+  p.setPen(QPen(QColor(0, 245, 212, 35), 24, Qt::SolidLine, Qt::RoundCap));
   p.drawArc(arcRect, bgStart, bgSpan);
 
-  // Inner dark frosted obsidian glass track
-  p.setPen(QPen(QColor(15, 20, 28, 210), 19, Qt::SolidLine, Qt::RoundCap));
+  // Inner dark frosted obsidian track
+  p.setPen(QPen(QColor(15, 20, 28, 230), 16, Qt::SolidLine, Qt::RoundCap));
   p.drawArc(arcRect, bgStart, bgSpan);
 
-  // 2. Center Zero Reference Pip (neutral indicator at 90°, 12 o'clock)
-  const float pip_r = 7.0f;
-  p.setPen(QPen(QColor(255, 255, 255, 120), 2.0f));
-  p.setBrush(QColor(15, 20, 28, 220));
-  p.drawEllipse(QPointF(cx, y), pip_r, pip_r);
+  // Inner subtle highlight edge
+  p.setPen(QPen(QColor(255, 255, 255, 40), 2.0f, Qt::SolidLine, Qt::RoundCap));
+  p.drawArc(arcRect, bgStart, bgSpan);
+
+  // 2. Center Zero Reference Pip (illuminated vertical line at 12 o'clock)
+  p.setPen(QPen(QColor(0, 245, 212, 255), 4.0f, Qt::SolidLine, Qt::RoundCap));
+  p.drawLine(QPointF(cx, arc_center_y - R - 18), QPointF(cx, arc_center_y - R + 18));
 
   // 3. Torque Dynamics Calculation & Limit Warning Colors
   float clamped = std::clamp(torque, -1.0f, 1.0f);
   float abs_torque = std::abs(clamped);
 
-  QColor arc_core_col = QColor(255, 255, 255, 250);
-  QColor arc_glow_col = QColor(255, 255, 255, 80);
+  QColor arc_core_col = QColor(0, 245, 212, 255); // Neon cyan core
+  QColor arc_glow_col = QColor(0, 245, 212, 110);
 
   if (saturated || abs_torque > 0.85f) {
-    arc_core_col =
-        QColor(248, 113, 113,
-               255); // Alert coral red (steering limit reached/saturated)
-    arc_glow_col = QColor(248, 113, 113, 120);
+    arc_core_col = QColor(248, 113, 113, 255); // Alert coral red
+    arc_glow_col = QColor(248, 113, 113, 140);
   } else if (abs_torque > 0.60f) {
-    arc_core_col =
-        QColor(245, 158, 11, 255); // Warning amber (approaching steering limit)
-    arc_glow_col = QColor(245, 158, 11, 100);
-  } else if (lateralActive) {
-    arc_core_col = QColor(255, 255, 255, 255); // Luminous white
-    arc_glow_col = QColor(255, 255, 255, 75);
+    arc_core_col = QColor(245, 158, 11, 255);  // Warning amber
+    arc_glow_col = QColor(245, 158, 11, 120);
+  } else if (lateralActive || getenv("FORCE_ONROAD") != NULL) {
+    arc_core_col = QColor(0, 245, 212, 255);   // Luminous cyan / mint
+    arc_glow_col = QColor(0, 245, 212, 110);
   } else {
-    arc_core_col = QColor(215, 220, 228, 180);
-    arc_glow_col = QColor(255, 255, 255, 30);
+    arc_core_col = QColor(140, 150, 160, 160);
+    arc_glow_col = QColor(140, 150, 160, 40);
   }
 
-  // 4. Growing Steering Arc (Comma 4 behavior)
-  // Arc grows outward from 90° center towards left or right as steering torque
-  // approaches limits
-  const float max_span = theta_max - 1.2f;
-  if (abs_torque > 0.02f) {
-    float sweep_deg = -clamped * max_span;
+  // 4. Growing Bilateral Steering Arc
+  const float max_half_span = 55.0f; // degrees from 90° center
+  float effective_torque = clamped;
+  if (getenv("FORCE_ONROAD") != NULL && std::abs(effective_torque) < 0.05f) {
+    effective_torque = -0.45f; // Active sweeping arc in demo
+  }
+
+  if (std::abs(effective_torque) > 0.02f) {
+    float sweep_deg = -effective_torque * max_half_span;
     int activeStart = 90 * 16;
     int activeSpan = (int)std::round(sweep_deg * 16.0f);
 
     // Soft luminous outer glow
-    p.setPen(QPen(arc_glow_col, 20, Qt::SolidLine, Qt::RoundCap));
+    p.setPen(QPen(arc_glow_col, 22, Qt::SolidLine, Qt::RoundCap));
     p.drawArc(arcRect, activeStart, activeSpan);
 
     // Solid bright growing steering arc
-    p.setPen(QPen(arc_core_col, 14, Qt::SolidLine, Qt::RoundCap));
+    p.setPen(QPen(arc_core_col, 15, Qt::SolidLine, Qt::RoundCap));
     p.drawArc(arcRect, activeStart, activeSpan);
 
-    // Active center pip accent dot
-    p.setPen(QPen(arc_core_col, 1.5f));
+    // Tip indicator pip at the edge of the sweep
+    float tip_angle_rad = (90.0f + sweep_deg) * (3.14159265f / 180.0f);
+    float tip_x = cx + R * std::cos(tip_angle_rad);
+    float tip_y = arc_center_y - R * std::sin(tip_angle_rad);
+    p.setPen(QPen(QColor(255, 255, 255, 240), 2.5f));
     p.setBrush(arc_core_col);
-    p.drawEllipse(QPointF(cx, y), 3.5f, 3.5f);
+    p.drawEllipse(QPointF(tip_x, tip_y), 7.0f, 7.0f);
   }
+
+  // 5. Digital Steering Angle Readout directly in the center
+  QString angle_str = QString::asprintf("%+.1f°", steerAngleDeg);
+  if (std::abs(steerAngleDeg) < 0.05f) {
+    angle_str = "0.0°";
+  }
+  configFont(p, "Inter", 54, "Bold");
+  QColor angle_col = QColor(255, 255, 255, 255);
+  if (wheelCritical || saturated) {
+    angle_col = QColor(248, 113, 113);
+  } else if (steerOverride) {
+    angle_col = QColor(245, 158, 11);
+  } else if (lateralActive || getenv("FORCE_ONROAD") != NULL) {
+    angle_col = QColor(255, 255, 255);
+  }
+  p.setPen(angle_col);
+  drawText(p, cx, y - 120, angle_str, 255);
+
+  // 6. Sub-label underneath: "Steering Reactor Arc"
+  configFont(p, "Inter", 22, "Medium");
+  p.setPen(QColor(156, 163, 175));
+  drawText(p, cx, y - 55, "Steering Reactor Arc", 220);
 
   p.restore();
 }
 
 void OnroadHud::drawSteerBtn(QPainter &p, int x, int y, float angle, bool critical, int dir) {
   p.save();
+  p.setRenderHint(QPainter::Antialiasing);
+
   const int btn_r = radius / 2;
   QRect btn_rc(x - btn_r, y - btn_r, radius, radius);
 
-  // 1. Disc background & dynamic border matching LANES/E2E button
+  // 1. Disc background & dynamic border
   QColor border_col = QColor(255, 255, 255, 45);
   int border_w = 2;
   if (critical) {
@@ -691,11 +846,18 @@ void OnroadHud::drawSteerBtn(QPainter &p, int x, int y, float angle, bool critic
     border_w = 3;
   }
 
-  p.setBrush(QColor(18, 22, 30, 160));
+  p.setBrush(QColor(15, 20, 28, 210));
   p.setPen(QPen(border_col, border_w));
   p.drawEllipse(btn_rc);
 
-  // 2. Rotating steering wheel inside disc (same size as LANES/E2E button)
+  // Outer active glow
+  if (lateralActive) {
+    p.setPen(QPen(QColor(border_col.red(), border_col.green(), border_col.blue(), 70), 6));
+    p.setBrush(Qt::NoBrush);
+    p.drawEllipse(btn_rc);
+  }
+
+  // 2. Rotating steering wheel inside disc
   p.save();
   p.translate(x, y);
   p.rotate(-angle);
@@ -713,60 +875,34 @@ void OnroadHud::drawSteerBtn(QPainter &p, int x, int y, float angle, bool critic
     p.drawPixmap(x + 50, y - exclamation_img.height() / 2, exclamation_img);
   }
 
-  // 4. Turn intent chevrons
-  if (dir != 0 && !turn_intent_img.isNull()) {
-    p.save();
-    if (dir == 1) { // Left
-      p.translate(x - 76, y);
-      p.drawPixmap(-turn_intent_img.width() / 2, -turn_intent_img.height() / 2, turn_intent_img);
-    } else if (dir == 2) { // Right (mirrored horizontally)
-      p.translate(x + 76, y);
-      p.scale(-1, 1);
-      p.drawPixmap(-turn_intent_img.width() / 2, -turn_intent_img.height() / 2, turn_intent_img);
-    }
-    p.restore();
-  }
+  // 4. Sequential Neon Turn Chevrons flanking the disc: « and »
+  QColor turn_col_left = (dir == 1) ? QColor(0, 245, 212, 240) : QColor(0, 245, 212, 160);
+  QColor turn_col_right = (dir == 2) ? QColor(0, 245, 212, 240) : QColor(0, 245, 212, 160);
+
+  // Left Chevron «
+  p.setPen(QPen(turn_col_left, 4, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+  p.drawLine(QPointF(x - btn_r - 20, y - 16), QPointF(x - btn_r - 34, y));
+  p.drawLine(QPointF(x - btn_r - 34, y), QPointF(x - btn_r - 20, y + 16));
+
+  // Right Chevron »
+  p.setPen(QPen(turn_col_right, 4, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+  p.drawLine(QPointF(x + btn_r + 20, y - 16), QPointF(x + btn_r + 34, y));
+  p.drawLine(QPointF(x + btn_r + 34, y), QPointF(x + btn_r + 20, y + 16));
+
+  // 5. Sub-label underneath: "Neon Sequential Turn"
+  configFont(p, "Inter", 22, "Medium");
+  p.setPen(QColor(156, 163, 175));
+  drawText(p, x, y + 74, "Neon Sequential Turn", 220);
 
   p.restore();
 }
 
-void OnroadHud::drawMiciSteeringWheel(QPainter &p, int cx, int cy, float angle,
-                                      bool critical) {
-  p.save();
-  p.translate(cx, cy);
-  p.rotate(-angle);
-
-  const QPixmap &wheel = critical ? wheel_critical_img : wheel_img;
-  if (!wheel.isNull()) {
-    p.setOpacity(lateralActive ? 1.0
-                               : (status == STATUS_DISENGAGED ? 0.45 : 0.85));
-    p.drawPixmap(-wheel.width() / 2, -wheel.height() / 2, wheel);
-    p.setOpacity(1.0);
-  }
-  p.restore();
-
-  // Exclamation mark if critical
-  if (critical && !exclamation_img.isNull()) {
-    p.drawPixmap(cx + 64, cy - exclamation_img.height() / 2, exclamation_img);
-  }
+void OnroadHud::drawMiciSteeringWheel(QPainter &p, int cx, int cy, float angle, bool critical) {
+  // Integrated into drawSteerBtn
 }
 
 void OnroadHud::drawTurnIntent(QPainter &p, int cx, int cy, int dir) {
-  if (dir == 0 || turn_intent_img.isNull())
-    return;
-
-  p.save();
-  if (dir == 1) { // Left
-    p.translate(cx - 86, cy);
-    p.drawPixmap(-turn_intent_img.width() / 2, -turn_intent_img.height() / 2,
-                 turn_intent_img);
-  } else if (dir == 2) { // Right (mirrored horizontally)
-    p.translate(cx + 86, cy);
-    p.scale(-1, 1);
-    p.drawPixmap(-turn_intent_img.width() / 2, -turn_intent_img.height() / 2,
-                 turn_intent_img);
-  }
-  p.restore();
+  // Turn intent is integrated directly into drawSteerBtn
 }
 
 void OnroadHud::drawStatusCapsule(QPainter &p, const QRect &rc,
@@ -774,61 +910,73 @@ void OnroadHud::drawStatusCapsule(QPainter &p, const QRect &rc,
                                   const QColor &color) {
   drawCapsule(p, rc);
 
-  configFont(p, "Inter", 38, "SemiBold");
-  p.setPen(QColor(166, 166, 166));
-  drawText(p, rc.center().x(), rc.top() + 48, label, 255);
-
-  configFont(p, "Inter", 64, "Bold");
+  configFont(p, "Inter", 54, "Bold");
   p.setPen(color);
-  drawText(p, rc.center().x(), rc.top() + 142, val, 255);
+  p.drawText(rc, Qt::AlignCenter, val);
 }
 
 void OnroadHud::drawActionBtn(QPainter &p, int x, int y, QPixmap &img,
                               bool active) {
-  p.setPen(QPen(QColor(255, 255, 255, 40), 2));
-  p.setBrush(QColor(18, 22, 30, active ? 180 : 120));
-  p.drawEllipse(x - radius / 2, y - radius / 2, radius, radius);
-  p.setOpacity(active ? 1.0 : 0.4);
+  p.save();
+  p.setRenderHint(QPainter::Antialiasing);
+
+  const int btn_r = radius / 2;
+  QRect btn_rc(x - btn_r, y - btn_r, radius, radius);
+
+  // Frosted obsidian glass disc
+  p.setPen(QPen(QColor(255, 255, 255, 45), 2.5));
+  p.setBrush(QColor(15, 20, 28, active ? 210 : 140));
+  p.drawEllipse(btn_rc);
+
+  if (active) {
+    p.setPen(QPen(QColor(0, 245, 212, 60), 6));
+    p.setBrush(Qt::NoBrush);
+    p.drawEllipse(btn_rc);
+  }
+
+  p.setOpacity(active ? 1.0 : 0.5);
   p.drawPixmap(x - img_size / 2, y - img_size / 2, img);
   p.setOpacity(1.0);
+
+  // Sub-label underneath: "Settings"
+  configFont(p, "Inter", 22, "Medium");
+  p.setPen(QColor(156, 163, 175));
+  drawText(p, x, y + 74, "Settings", 220);
+
+  p.restore();
 }
 
 void OnroadHud::drawModeBtn(QPainter &p, int x, int y, bool is_experimental) {
   p.save();
-  const int btn_r = radius / 2;
-  QRect btn_rc(x - btn_r, y - btn_r, radius, radius);
+  p.setRenderHint(QPainter::Antialiasing);
 
-  if (is_experimental) {
-    // Release-mici glowing amber flame disc for E2E / Experimental Mode
-    QRadialGradient glow(x, y, btn_r);
-    glow.setColorAt(0.0, QColor(245, 158, 11, 160));
-    glow.setColorAt(0.75, QColor(217, 119, 6, 100));
-    glow.setColorAt(1.0, QColor(180, 83, 9, 30));
-    p.setBrush(glow);
-    p.setPen(QPen(QColor(245, 158, 11, 230), 4));
-    p.drawEllipse(btn_rc);
+  const int pill_w = 230;
+  const int pill_h = 92;
+  QRect pill_rc(x - pill_w / 2, y - pill_h / 2, pill_w, pill_h);
+  int r = pill_h / 2;
 
-    if (!exp_img.isNull()) {
-      p.drawPixmap(x - exp_img.width() / 2, y - exp_img.height() / 2, exp_img);
-    }
-  } else {
-    // Standard mode: Clean dark glass disc with chffr steering wheel
-    p.setBrush(QColor(18, 22, 30, 150));
-    p.setPen(QPen(QColor(255, 255, 255, 45), 2));
-    p.drawEllipse(btn_rc);
+  // Frosted obsidian pill background
+  p.setBrush(QColor(15, 20, 28, 220));
 
-    if (!chffr_wheel_img.isNull()) {
-      p.setOpacity(0.8);
-      p.drawPixmap(x - chffr_wheel_img.width() / 2,
-                   y - chffr_wheel_img.height() / 2, chffr_wheel_img);
-      p.setOpacity(1.0);
-    }
-  }
+  QColor rim_col = is_experimental ? QColor(245, 158, 11) : QColor(0, 245, 212);
 
-  // Label underneath: "LANES" or "E2E"
-  configFont(p, "Inter", 22, "SemiBold");
-  p.setPen(is_experimental ? QColor(245, 158, 11) : QColor(180, 190, 200, 200));
-  drawText(p, x, y + btn_r - 12, is_experimental ? "E2E" : "LANES", 220);
+  // Outer soft glow
+  p.setPen(QPen(QColor(rim_col.red(), rim_col.green(), rim_col.blue(), 80), 8, Qt::SolidLine, Qt::RoundCap));
+  p.drawRoundedRect(pill_rc, r, r);
+
+  // Core neon rim
+  p.setPen(QPen(QColor(rim_col.red(), rim_col.green(), rim_col.blue(), 230), 3.5, Qt::SolidLine, Qt::RoundCap));
+  p.drawRoundedRect(pill_rc, r, r);
+
+  // Text inside pill: "E2E / LANES"
+  configFont(p, "Inter", 26, "Bold");
+  p.setPen(rim_col);
+  p.drawText(pill_rc, Qt::AlignCenter, is_experimental ? "E2E MODE" : "E2E / LANES");
+
+  // Sub-label underneath: "Mode Toggle"
+  configFont(p, "Inter", 22, "Medium");
+  p.setPen(QColor(156, 163, 175));
+  drawText(p, x, y + 74, "Mode Toggle", 220);
 
   p.restore();
 }
@@ -838,25 +986,25 @@ void OnroadHud::drawDriverMonitoringDisc(QPainter &p, int x, int y, bool active,
                                          bool face_detected, float yaw,
                                          float pitch) {
   p.save();
+  p.setRenderHint(QPainter::Antialiasing);
+
   const int btn_r = radius / 2;
   QRect btn_rc(x - btn_r, y - btn_r, radius, radius);
 
-  // 1. Base dark glass disc
-  p.setBrush(QColor(18, 22, 30, active ? 180 : 120));
-  p.setPen(QPen(QColor(255, 255, 255, 40), 2));
+  // 1. Base dark frosted obsidian glass disc
+  p.setBrush(QColor(15, 20, 28, active ? 210 : 140));
+  p.setPen(QPen(QColor(255, 255, 255, 45), 2.0));
   p.drawEllipse(btn_rc);
 
   // 2. Awareness arc ring around the disc
   if (active) {
-    const int ring_r = btn_r + 6;
+    const int ring_r = btn_r + 8;
     QRectF ring_rc(x - ring_r, y - ring_r, ring_r * 2, ring_r * 2);
 
-    // Subtle track
     p.setBrush(Qt::NoBrush);
     p.setPen(QPen(QColor(255, 255, 255, 25), 4, Qt::SolidLine, Qt::RoundCap));
     p.drawEllipse(ring_rc);
 
-    // Sweep arc proportional to awareness (360 deg, clockwise from top)
     float span = std::clamp(awareness, 0.0f, 1.0f) * 360.0f;
     int start_angle = 90 * 16;
     int span_angle = (int)(-span * 16.0f);
@@ -865,20 +1013,18 @@ void OnroadHud::drawDriverMonitoringDisc(QPainter &p, int x, int y, bool active,
     if (distracted || awareness < 0.35f) {
       ring_col = QColor(248, 113, 113); // Coral alert
     } else if (awareness < 0.70f) {
-      ring_col = QColor(245, 158, 11); // Amber warning
+      ring_col = QColor(245, 158, 11);  // Amber warning
     } else {
       ring_col = QColor(128, 216, 166); // Emerald / mint
     }
 
-    p.setPen(QPen(ring_col, 5, Qt::SolidLine, Qt::RoundCap));
+    // Outer subtle glow
+    p.setPen(QPen(QColor(ring_col.red(), ring_col.green(), ring_col.blue(), 80), 10, Qt::SolidLine, Qt::RoundCap));
     p.drawArc(ring_rc, start_angle, span_angle);
 
-    // If distracted: outer warning pulse halo
-    if (distracted) {
-      p.setPen(
-          QPen(QColor(248, 113, 113, 90), 10, Qt::SolidLine, Qt::RoundCap));
-      p.drawArc(ring_rc, start_angle, span_angle);
-    }
+    // Solid arc
+    p.setPen(QPen(ring_col, 5, Qt::SolidLine, Qt::RoundCap));
+    p.drawArc(ring_rc, start_angle, span_angle);
   }
 
   // 3. Driver face icon
@@ -898,8 +1044,13 @@ void OnroadHud::drawDriverMonitoringDisc(QPainter &p, int x, int y, bool active,
     QColor gaze_col = distracted ? QColor(248, 113, 113) : QColor(0, 245, 212);
     p.setBrush(gaze_col);
     p.setPen(QPen(QColor(255, 255, 255, 200), 1.5));
-    p.drawEllipse(QPointF(gaze_x, gaze_y), 4.5f, 4.5f);
+    p.drawEllipse(QPointF(gaze_x, gaze_y), 5.0f, 5.0f);
   }
+
+  // 5. Sub-label underneath: "Driver Monitoring"
+  configFont(p, "Inter", 22, "Medium");
+  p.setPen(QColor(156, 163, 175));
+  drawText(p, x, y + 74, "Driver Monitoring", 220);
 
   p.restore();
 }
@@ -908,24 +1059,23 @@ void OnroadHud::paintEvent(QPaintEvent *event) {
   QPainter p(this);
   p.setRenderHint(QPainter::Antialiasing);
 
-  // 1. Release-mici header vertical gradient (300px)
-  QLinearGradient bg(0, 0, 0, 320);
-  bg.setColorAt(0, QColor(0, 0, 0, 150));
-  bg.setColorAt(0.65, QColor(0, 0, 0, 65));
+  // 1. Subtle horizon top vignette
+  QLinearGradient bg(0, 0, 0, 260);
+  bg.setColorAt(0, QColor(0, 0, 0, 140));
+  bg.setColorAt(0.7, QColor(0, 0, 0, 50));
   bg.setColorAt(1, QColor(0, 0, 0, 0));
-  p.fillRect(0, 0, width(), 320, bg);
+  p.fillRect(0, 0, width(), 260, bg);
 
-  // 2. MAX Speed box (top-left) - 200x204
-  int set_speed_w = 200;
-  QRect max_rc(bdr_s * 2, bdr_s * 1.5, set_speed_w, 204);
+  // 2. MAX Speed & Distance Capsule (top-left) - 380x140
+  QRect max_rc(45, 35, 380, 140);
   drawSetSpeedBox(p, max_rc);
 
   // 3. Current Speed (top-center)
-  drawCurrentSpeed(p, rect().center().x(), 180);
+  drawCurrentSpeed(p, rect().center().x(), 160);
 
-  // 4. TEMP / Status capsule (top-right) - 180x204
-  int temp_w = 180;
-  QRect temp_rc(rect().right() - bdr_s * 2 - temp_w, bdr_s * 1.5, temp_w, 204);
+  // 4. TEMP / Climate capsule (top-right) - 230x140
+  int temp_w = 230;
+  QRect temp_rc(rect().right() - temp_w - 45, 35, temp_w, 140);
   QColor temp_col = QColor(240, 243, 246);
   if (thermalStatus == (int)cereal::DeviceState::ThermalStatus::YELLOW) {
     temp_col = QColor(251, 191, 36);
@@ -934,40 +1084,33 @@ void OnroadHud::paintEvent(QPaintEvent *event) {
   }
   drawStatusCapsule(p, temp_rc, "TEMP", temperature, temp_col);
 
-  // 5. Bottom floating action discs & Torque Arc Bar
-  int settings_cx = radius / 2 + (bdr_s * 2);
-  int settings_cy = rect().bottom() - footer_h / 2;
-  int mode_cx = settings_cx + radius + 32;
-  int mode_cy = settings_cy;
+  // 5. Bottom Controls & Telemetry Dock
+  int settings_cy = rect().bottom() - 125;
+  int settings_cx = 140;
+  int mode_cx = 380;
+  int wheel_cx = rect().right() - 380;
+  int dm_cx = rect().right() - 140;
 
-  // Steering wheel button is symmetric with LANES/E2E button on the right side
-  int wheel_cx = rect().right() - mode_cx;
-  int wheel_cy = settings_cy;
-
-  // Dynamic Torque Arc Bar at bottom center, sized to fit comfortably between inner buttons
+  // Center Steering Torque Reactor Arc
   int arc_cx = rect().center().x();
-  int arc_y = rect().bottom() - 110;
-  float available_half_w = ((wheel_cx - radius / 2) - (mode_cx + radius / 2) - 36) / 2.0f;
+  int arc_y = rect().bottom();
+  float available_half_w = 210.0f;
   drawBottomTorqueArcBar(p, arc_cx, arc_y, steerTorque, steerSaturated, available_half_w);
 
-  // 6. Steering Wheel Button (SAME SIZE as LANES/E2E button)
-  drawSteerBtn(p, wheel_cx, wheel_cy, steerAngleDeg, wheelCritical, laneChangeDirection);
-
-  // 7. Outer Action Discs: Settings (far left), LANES/E2E (inner left), DM (far right)
+  // Outer Action Discs & Pills
   drawActionBtn(p, settings_cx, settings_cy, settings_img, engageable);
-  drawModeBtn(p, mode_cx, mode_cy, experimental_mode);
+  drawModeBtn(p, mode_cx, settings_cy, experimental_mode);
+  drawSteerBtn(p, wheel_cx, settings_cy, steerAngleDeg, wheelCritical, laneChangeDirection);
 
   if (!hideDM) {
-    int dm_cx = rect().right() - radius / 2 - (bdr_s * 2);
-    int dm_cy = settings_cy;
-    drawDriverMonitoringDisc(p, dm_cx, dm_cy, dmActive, dmAwareness,
+    drawDriverMonitoringDisc(p, dm_cx, settings_cy, dmActive, dmAwareness,
                              dmDistracted, dmFaceDetected, dmYaw, dmPitch);
   }
 
-  // 8. Right-edge AI Confidence Ball
-  int ball_x = rect().right() - bdr_s / 2 - 4;
+  // Right-edge AI Confidence Ball
+  int ball_x = rect().right() - 16;
   int ball_top_y = 120;
-  int ball_bot_y = rect().bottom() - footer_h - 10;
+  int ball_bot_y = rect().bottom() - 160;
   drawConfidenceBall(p, ball_x, ball_top_y, ball_bot_y, modelConfidence);
 }
 
@@ -1155,6 +1298,51 @@ void NvgWindow::drawLaneLines(QPainter &painter, const UIScene &scene) {
   painter.setBrush(getPathGradient(
       scene, a_ego, s->engaged() || getenv("FORCE_ONROAD") != NULL));
   painter.drawPolygon(scene.track_vertices.v, scene.track_vertices.cnt);
+
+  // Kinetic momentum chevrons along path centerline
+  int v_cnt = scene.track_vertices.cnt;
+  if (v_cnt >= 8 && (s->engaged() || getenv("FORCE_ONROAD") != NULL)) {
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing);
+
+    float v_ego = 0.0f;
+    if (s->sm->alive("carState") && s->sm->valid("carState")) {
+      v_ego = std::max(0.0f, (*s->sm)["carState"].getCarState().getVEgo());
+    }
+    if (getenv("FORCE_ONROAD") != NULL && v_ego == 0.0f) {
+      v_ego = 22.0f;
+    }
+
+    double t = millis_since_boot() * 0.001;
+    float phase = std::fmod(t * (0.8f + v_ego * 0.04f), 1.0f);
+
+    int half_cnt = v_cnt / 2;
+    for (int k = 0; k < 3; ++k) {
+      float frac = std::fmod(phase + k * 0.333f, 1.0f);
+      int idx = std::clamp((int)(frac * (half_cnt - 2)), 1, half_cnt - 2);
+
+      QPointF p_left = scene.track_vertices.v[idx];
+      QPointF p_right = scene.track_vertices.v[v_cnt - 1 - idx];
+      QPointF center = (p_left + p_right) * 0.5f;
+
+      float chevron_w = std::hypot(p_right.x() - p_left.x(), p_right.y() - p_left.y()) * 0.28f;
+      float chevron_h = chevron_w * 0.45f;
+
+      QPointF arrow[] = {
+        QPointF(center.x(), center.y() - chevron_h),
+        QPointF(center.x() + chevron_w, center.y() + chevron_h * 0.4f),
+        QPointF(center.x(), center.y()),
+        QPointF(center.x() - chevron_w, center.y() + chevron_h * 0.4f)
+      };
+
+      int chevron_alpha = (int)(180.0f * (1.0f - frac));
+      QColor chevron_col(0, 245, 212, std::clamp(chevron_alpha, 0, 200));
+      painter.setPen(Qt::NoPen);
+      painter.setBrush(chevron_col);
+      painter.drawPolygon(arrow, 4);
+    }
+    painter.restore();
+  }
 }
 
 void NvgWindow::drawLead(
@@ -1203,6 +1391,44 @@ void NvgWindow::drawLead(
   painter.setPen(QPen(QColor(255, 255, 255, 230), 2.5, Qt::SolidLine,
                       Qt::RoundCap, Qt::RoundJoin));
   painter.drawPolygon(chevron, std::size(chevron));
+
+  // 3. Fighter-Jet Corner Brackets & Ground Anchor Reticle
+  float bw = sz * 1.35f;
+  float bh = sz * 1.1f;
+  float corner_len = sz * 0.45f;
+  QPen bracket_pen(QColor(aura_color.red(), aura_color.green(), aura_color.blue(), std::max(160, (int)fillAlpha)), 2.5, Qt::SolidLine, Qt::RoundCap);
+  painter.setPen(bracket_pen);
+
+  // Top-left corner [
+  painter.drawLine(QPointF(x - bw, y - bh * 0.2f + corner_len), QPointF(x - bw, y - bh * 0.2f));
+  painter.drawLine(QPointF(x - bw, y - bh * 0.2f), QPointF(x - bw + corner_len, y - bh * 0.2f));
+
+  // Top-right corner ]
+  painter.drawLine(QPointF(x + bw, y - bh * 0.2f + corner_len), QPointF(x + bw, y - bh * 0.2f));
+  painter.drawLine(QPointF(x + bw, y - bh * 0.2f), QPointF(x + bw - corner_len, y - bh * 0.2f));
+
+  // Ground anchor shadow bracket beneath tires
+  float ground_y = y + sz * 1.15f;
+  painter.drawLine(QPointF(x - bw * 0.85f, ground_y), QPointF(x + bw * 0.85f, ground_y));
+
+  // 4. Floating Distance Badge Tag (e.g. "38m")
+  if (d_rel > 0.5f) {
+    QString dist_text = QString::number(std::round(d_rel)) + "m";
+    configFont(painter, "Inter", std::clamp((int)(sz * 0.75f), 18, 28), "Bold");
+    QFontMetrics fm(painter.font());
+    QRect text_rc = fm.boundingRect(dist_text);
+    int tag_w = text_rc.width() + 16;
+    int tag_h = text_rc.height() + 8;
+    QRect badge_rc(x - tag_w / 2, y - bh * 0.2f - tag_h - 6, tag_w, tag_h);
+
+    painter.setPen(QPen(QColor(255, 255, 255, 60), 1.0));
+    painter.setBrush(QColor(15, 20, 28, 200));
+    painter.drawRoundedRect(badge_rc, 6, 6);
+
+    painter.setPen(QColor(255, 255, 255, 240));
+    painter.drawText(badge_rc, Qt::AlignCenter, dist_text);
+  }
+
   painter.setPen(Qt::NoPen);
 }
 

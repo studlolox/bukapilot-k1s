@@ -36,6 +36,8 @@ class OnroadHud : public QWidget {
   Q_PROPERTY(float modelConfidence MEMBER modelConfidence NOTIFY valueChanged);
   Q_PROPERTY(bool experimentalMode MEMBER experimental_mode NOTIFY valueChanged);
 
+  Q_PROPERTY(float aEgo MEMBER aEgo NOTIFY valueChanged);
+
 public:
   explicit OnroadHud(QWidget *parent);
   void updateState(const UIState &s);
@@ -47,6 +49,7 @@ private:
   void drawDistanceBars(QPainter &p, int cx, int y, int bars, const QColor &active_color);
   void drawConfidenceBall(QPainter &p, int x, int top_y, int bottom_y, float confidence);
   void drawCurrentSpeed(QPainter &p, int cx, int y);
+  void drawSpeedHaloArc(QPainter &p, int cx, int cy, float cur_spd, float max_spd, float a_ego);
   void drawMiciSteeringWheel(QPainter &p, int cx, int cy, float angle, bool critical);
   void drawSteerBtn(QPainter &p, int x, int y, float angle, bool critical, int dir);
   void drawBottomTorqueArcBar(QPainter &p, int cx, int y, float torque, bool saturated, float max_half_w = 210.0f);
@@ -74,6 +77,7 @@ private:
   QString speedUnit;
   QString maxSpeed;
   QString temperature;
+  float aEgo = 0.0f;
   float steerAngleDeg = 0.0f;
   bool steerOverride = false;
   bool lateralActive = false;
