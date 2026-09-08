@@ -732,15 +732,12 @@ void OnroadHud::drawSpeedHaloArc(QPainter &p, int cx, int cy, float cur_spd, flo
 }
 
 void OnroadHud::drawCurrentSpeed(QPainter &p, int cx, int y) {
-  // 1. Draw Tachymetric Speed Halo Arc
-  drawSpeedHaloArc(p, cx, y, speed.toFloat(), maxSpeed.toFloat(), aEgo);
-
-  // 2. Monolithic High-Contrast Speed Numerals
+  // 1. Monolithic High-Contrast Speed Numerals
   configFont(p, "Inter", 160, "Bold");
   p.setPen(QColor(255, 255, 255));
   drawText(p, cx, y, speed, 255);
 
-  // 3. Speed Unit
+  // 2. Speed Unit
   configFont(p, "Inter", 44, "Medium");
   p.setPen(QColor(209, 213, 219)); // Slate silver
   drawText(p, cx, y + 74, speedUnit, 220);
