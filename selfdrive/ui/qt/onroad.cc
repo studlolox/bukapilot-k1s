@@ -1433,9 +1433,26 @@ void NvgWindow::drawLead(
 }
 
 void NvgWindow::paintGL() {
+  UIState *s = uiState();
+  if (!s->awake) {
+    return;
+  }
+
+  // Thermal optimization for K1S:
+  // When SoC temperature reaches Yellow (80°C+) or higher, decimate heavy rendering
+  // to 10 FPS (every 2nd frame) to cut GPU/CPU thermal load and prevent reaching Red (90°C).
+  static uint64_t paint_frame_count = 0;
+  if (s->sm->allAliveAndValid({"deviceState"})) {
+    auto thermal_status = (*s->sm)["deviceState"].getDeviceState().getThermalStatus();
+    if (thermal_status >= cereal::DeviceState::ThermalStatus::YELLOW) {
+      if ((++paint_frame_count % 2) != 0) {
+        return;
+      }
+    }
+  }
+
   CameraViewWidget::paintGL();
 
-  UIState *s = uiState();
   if (s->worldObjectsVisible()) {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);

@@ -394,7 +394,25 @@ class Android(HardwareBase):
       return 0
 
   def set_power_save(self, powersave_enabled):
-    pass
+    # Devfreq power saving for K1S:
+    # When offroad, relax memory bus and GPU governors to avoid static heat soak under direct sun.
+    # When onroad, restore performance mode for deterministic vision and control throughput.
+    try:
+      cpubw_gov = "powersave" if powersave_enabled else "performance"
+      m4m_gov = "powersave" if powersave_enabled else "performance"
+      gpu_gov = "msm-adreno-tz" if powersave_enabled else "performance"
+
+      devfreq_configs = [
+        ("/sys/class/devfreq/soc:qcom,cpubw/governor", cpubw_gov),
+        ("/sys/class/devfreq/soc:qcom,m4m/governor", m4m_gov),
+        ("/sys/class/devfreq/b00000.qcom,kgsl-3d0/governor", gpu_gov),
+      ]
+      for path, val in devfreq_configs:
+        if os.path.isfile(path):
+          with open(path, "w") as f:
+            f.write(f"{val}\n")
+    except Exception:
+      pass
 
   def get_gpu_usage_percent(self):
     try:

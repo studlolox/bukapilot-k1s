@@ -37,6 +37,15 @@ void configFont(QPainter &p, const QString &family, int size,
                 const QString &style) {
   QFont f(family);
   f.setPixelSize(size);
+  if (style == "Bold") {
+    f.setWeight(QFont::Bold);
+  } else if (style == "SemiBold") {
+    f.setWeight(QFont::DemiBold);
+  } else if (style == "Medium") {
+    f.setWeight(QFont::Medium);
+  } else {
+    f.setWeight(QFont::Normal);
+  }
   f.setStyleName(style);
   p.setFont(f);
 }
@@ -81,10 +90,14 @@ void setQtSurfaceFormat() {
   fmt.setVersion(3, 2);
   fmt.setProfile(QSurfaceFormat::OpenGLContextProfile::CoreProfile);
   fmt.setRenderableType(QSurfaceFormat::OpenGL);
+  fmt.setSamples(4);
 #else
   fmt.setRenderableType(QSurfaceFormat::OpenGLES);
+  // Thermal optimization for K1S:
+  // On embedded Qualcomm Adreno 530, 16x MSAA creates massive GPU memory bandwidth
+  // saturation and severe heat soak. QPainter already uses vector antialiasing.
+  fmt.setSamples(Hardware::EON() ? 0 : 4);
 #endif
-  fmt.setSamples(16);
   QSurfaceFormat::setDefaultFormat(fmt);
 }
 

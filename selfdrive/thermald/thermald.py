@@ -400,6 +400,15 @@ def thermald_thread(end_event, hw_queue):
     # Check if we need to disable charging (handled by boardd)
     msg.deviceState.chargingDisabled = power_monitor.should_disable_charging(onroad_conditions["ignition"], in_car, off_ts)
 
+    # Thermal safeguard for internal battery (K1S enclosure protection):
+    # Charging a hot lithium battery inside a windshield enclosure generates 1.5-2W of Joule heat.
+    # Disabling charging when battery >= 75% and max_comp_temp > 70.0°C reduces enclosure heat soak.
+    if EON:
+      if msg.deviceState.batteryPercent >= 75 and max_comp_temp > 70.0:
+        HARDWARE.set_battery_charging(False)
+      elif msg.deviceState.batteryPercent < 60 or max_comp_temp < 65.0:
+        HARDWARE.set_battery_charging(True)
+
     # Check if we need to shut down
     if power_monitor.should_shutdown(peripheralState, onroad_conditions["ignition"], in_car, off_ts, started_seen):
       cloudlog.warning(f"shutting device down, offroad since {off_ts}")

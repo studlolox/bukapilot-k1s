@@ -6,6 +6,24 @@
 #include "selfdrive/hardware/hw.h"
 
 MainWindow::MainWindow(QWidget *parent) : QWidget(parent) {
+  // load fonts first so that any child widgets and styles can resolve them immediately
+  QFontDatabase::addApplicationFont("../assets/fonts/Inter-Regular.ttf");
+  QFontDatabase::addApplicationFont("../assets/fonts/Inter-Medium.ttf");
+  QFontDatabase::addApplicationFont("../assets/fonts/Inter-SemiBold.ttf");
+  QFontDatabase::addApplicationFont("../assets/fonts/Inter-Bold.ttf");
+  QFontDatabase::addApplicationFont("../assets/fonts/Inter-ExtraBold.ttf");
+  QFontDatabase::addApplicationFont("../assets/fonts/GlacialIndifference-Regular.otf");
+  QFontDatabase::addApplicationFont("../assets/fonts/GlacialIndifference-Bold.otf");
+
+  // no outline to prevent the focus rectangle
+  setStyleSheet(R"(
+    * {
+      font-family: Inter, Glacial Indifference, sans-serif;
+      outline: none;
+    }
+  )");
+  setAttribute(Qt::WA_NoSystemBackground);
+
   main_layout = new QStackedLayout(this);
   main_layout->setMargin(0);
 
@@ -49,24 +67,6 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent) {
       closeSettings();
     }
   });
-
-  // load fonts
-  QFontDatabase::addApplicationFont("../assets/fonts/Inter-Regular.ttf");
-  QFontDatabase::addApplicationFont("../assets/fonts/Inter-Medium.ttf");
-  QFontDatabase::addApplicationFont("../assets/fonts/Inter-SemiBold.ttf");
-  QFontDatabase::addApplicationFont("../assets/fonts/Inter-Bold.ttf");
-  QFontDatabase::addApplicationFont("../assets/fonts/Inter-ExtraBold.ttf");
-  QFontDatabase::addApplicationFont("../assets/fonts/GlacialIndifference-Regular.otf");
-  QFontDatabase::addApplicationFont("../assets/fonts/GlacialIndifference-Bold.otf");
-
-  // no outline to prevent the focus rectangle
-  setStyleSheet(R"(
-    * {
-      font-family: Inter, Glacial Indifference, sans-serif;
-      outline: none;
-    }
-  )");
-  setAttribute(Qt::WA_NoSystemBackground);
 }
 
 void MainWindow::openSettings() {

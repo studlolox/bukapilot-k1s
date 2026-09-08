@@ -322,8 +322,12 @@ void CameraViewWidget::vipcThread() {
         }
         latest_texture_id = buf->idx;
       }
-      // Schedule update. update() will be invoked on the gui thread.
-      QMetaObject::invokeMethod(this, "update");
+      // Thermal optimization for K1S:
+      // When screen is off / asleep (ScreenOffDriving or display timeout),
+      // avoid scheduling paint updates to eliminate unnecessary GPU/CPU rendering cycles.
+      if (uiState()->awake) {
+        QMetaObject::invokeMethod(this, "update");
+      }
 
       // TODO: remove later, it's only connected by DriverView.
       emit vipcThreadFrameReceived(buf);

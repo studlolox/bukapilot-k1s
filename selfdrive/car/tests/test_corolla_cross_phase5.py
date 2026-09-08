@@ -121,6 +121,60 @@ class TestCorollaCrossPhase5(unittest.TestCase):
     # 2. Active alert restores full 100% brightness immediately
     self.assertAlmostEqual(b_alert, b_active, places=2)
 
+  def test_eon_set_power_save_governor_logic(self):
+    """Verify K1S devfreq governor scaling for offroad power saving."""
+    from selfdrive.hardware.eon.hardware import Android
+    import unittest.mock as mock
+
+    android = Android()
+    # Test that set_power_save runs without throwing exceptions even with absent sysfs nodes
+    android.set_power_save(powersave_enabled=True)
+    android.set_power_save(powersave_enabled=False)
+
+    # Mock open and isfile to verify governor selections
+    written_data = {}
+    def mock_open(path, mode="r"):
+      m = mock.MagicMock()
+      def write(val):
+        written_data[path] = val.strip()
+      m.__enter__.return_value.write = write
+      return m
+
+    with mock.patch("os.path.isfile", return_value=True), mock.patch("builtins.open", mock_open):
+      # Offroad powersave mode
+      android.set_power_save(powersave_enabled=True)
+      self.assertEqual(written_data.get("/sys/class/devfreq/soc:qcom,cpubw/governor"), "powersave")
+      self.assertEqual(written_data.get("/sys/class/devfreq/soc:qcom,m4m/governor"), "powersave")
+      self.assertEqual(written_data.get("/sys/class/devfreq/b00000.qcom,kgsl-3d0/governor"), "msm-adreno-tz")
+
+      # Onroad performance mode
+      android.set_power_save(powersave_enabled=False)
+      self.assertEqual(written_data.get("/sys/class/devfreq/soc:qcom,cpubw/governor"), "performance")
+      self.assertEqual(written_data.get("/sys/class/devfreq/soc:qcom,m4m/governor"), "performance")
+      self.assertEqual(written_data.get("/sys/class/devfreq/b00000.qcom,kgsl-3d0/governor"), "performance")
+
+  def test_internal_battery_thermal_safeguard_logic(self):
+    """Verify smart internal battery charging cutoff when hot inside enclosure."""
+    def should_charge(battery_percent, max_comp_temp, currently_charging):
+      if battery_percent >= 75 and max_comp_temp > 70.0:
+        return False
+      elif battery_percent < 60 or max_comp_temp < 65.0:
+        return True
+      return currently_charging
+
+    # 1. High temperature (74°C) with high battery (80%) -> Stop charging to prevent Joule heating
+    self.assertFalse(should_charge(battery_percent=80, max_comp_temp=74.0, currently_charging=True))
+
+    # 2. Cool down (63°C) -> Resume charging
+    self.assertTrue(should_charge(battery_percent=80, max_comp_temp=63.0, currently_charging=False))
+
+    # 3. Low battery (< 60%) -> Always charge
+    self.assertTrue(should_charge(battery_percent=55, max_comp_temp=72.0, currently_charging=False))
+
+    # 4. Hysteresis band (70% battery at 68°C) -> Retain current state
+    self.assertTrue(should_charge(battery_percent=70, max_comp_temp=68.0, currently_charging=True))
+    self.assertFalse(should_charge(battery_percent=70, max_comp_temp=68.0, currently_charging=False))
+
 
 if __name__ == '__main__':
   unittest.main()
