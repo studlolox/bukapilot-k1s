@@ -216,8 +216,8 @@ Tropical sun creates reflections from the Corolla Cross dashboard onto the winds
 │   └── [✓] Tune Driver Monitoring head pose pitch offset (+5°)
 │
 └── Phase 5: K1S Thermal & System Polish
-    ├── [ ] Optimize auto-exposure region of interest for dashboard glare
-    └── [ ] Implement dynamic screen dimming
+    ├── [✓] Optimize auto-exposure region of interest for dashboard glare
+    └── [✓] Implement dynamic screen dimming
 ```
 
 ---

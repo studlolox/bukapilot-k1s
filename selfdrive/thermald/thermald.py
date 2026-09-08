@@ -99,10 +99,10 @@ def set_eon_fan(val):
     last_eon_fan_val = val
 
 
-# temp thresholds to control fan speed - high hysteresis
-_TEMP_THRS_H = [50., 65., 80., 10000]
+# temp thresholds to control fan speed - high hysteresis (proactive cooling for K1S)
+_TEMP_THRS_H = [45., 58., 68., 10000]
 # temp thresholds to control fan speed - low hysteresis
-_TEMP_THRS_L = [42.5, 57.5, 72.5, 10000]
+_TEMP_THRS_L = [40., 52., 63., 10000]
 # fan speed options
 _FAN_SPEEDS = [0, 16384, 32768, 65535]
 

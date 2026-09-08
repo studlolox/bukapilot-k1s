@@ -1079,7 +1079,8 @@ void process_road_camera(MultiCameraState *s, CameraState *c, int cnt) {
   s->pm->send("roadCameraState", msg);
 
   if (cnt % 3 == 0) {
-    const int x = 290, y = 322, width = 560, height = 314;
+    // Corolla Cross TSS2: centered on horizon & lead vehicles, excluding bottom 36% dashboard glare zone
+    const int x = 290, y = 280, width = 560, height = 280;
     const int skip = 1;
     camera_autoexposure(c, set_exposure_target(b, x, x + width, skip, y, y + height, skip));
   }
