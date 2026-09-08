@@ -210,8 +210,8 @@ OnroadHud::OnroadHud(QWidget *parent) : QWidget(parent) {
   settings_img = loadPixmap("../assets/kommu/settings.png", {img_size, img_size});
   exp_img = loadPixmap("../assets/icons_mici/experimental.png", {img_size, img_size});
   chffr_wheel_img = loadPixmap("../assets/img_chffr_wheel.png", {img_size, img_size});
-  wheel_img = loadPixmap("../assets/icons_mici/wheel.png", {80, 80});
-  wheel_critical_img = loadPixmap("../assets/icons_mici/wheel_critical.png", {80, 80});
+  wheel_img = loadPixmap("../assets/icons_mici/wheel.png", {110, 110});
+  wheel_critical_img = loadPixmap("../assets/icons_mici/wheel_critical.png", {110, 110});
   turn_intent_img = loadPixmap("../assets/icons_mici/turn_intent_left.png", {38, 38});
   exclamation_img = loadPixmap("../assets/icons_mici/exclamation_point.png", {12, 44});
 
@@ -537,42 +537,85 @@ void OnroadHud::drawCurrentSpeed(QPainter &p, int cx, int y) {
   drawText(p, cx, y + 80, speedUnit, 200);
 }
 
-void OnroadHud::drawTorqueArcBar(QPainter &p, int cx, int cy, int arc_radius, float torque, bool saturated) {
-  QRectF arcRect(cx - arc_radius, cy - arc_radius, arc_radius * 2, arc_radius * 2);
+void OnroadHud::drawBottomTorqueArcBar(QPainter &p, int cx, int y, float torque, bool saturated) {
+  p.save();
+  p.setRenderHint(QPainter::Antialiasing);
 
-  // Background subtle track (top 140° arc, centered at 90° / 12 o'clock)
-  const int fullSpanDeg = 140;
-  int bgStart = (90 + fullSpanDeg / 2) * 16;
-  int bgSpan = -fullSpanDeg * 16;
+  const float R = 1100.0f;
+  const float theta_max = 11.0f; // Half-span in degrees (total 22° span, ~420px wide)
+  QRectF arcRect(cx - R, y, 2.0f * R, 2.0f * R);
 
+  // 1. Background Track
+  // Arc sweeps from 90° + theta_max (left) clockwise by -2 * theta_max to 90° - theta_max (right)
+  int bgStart = (int)std::round((90.0f + theta_max) * 16.0f);
+  int bgSpan = (int)std::round((-2.0f * theta_max) * 16.0f);
+
+  // Outer subtle border / glow for track
   p.setBrush(Qt::NoBrush);
-  p.setPen(QPen(QColor(255, 255, 255, 45), 5, Qt::SolidLine, Qt::RoundCap));
+  p.setPen(QPen(QColor(255, 255, 255, 38), 24, Qt::SolidLine, Qt::RoundCap));
   p.drawArc(arcRect, bgStart, bgSpan);
 
-  // Center reference tick
-  p.setPen(QPen(QColor(255, 255, 255, 120), 3, Qt::SolidLine, Qt::RoundCap));
-  p.drawArc(arcRect, 90 * 16 - 8, 16);
+  // Inner dark frosted obsidian glass track
+  p.setPen(QPen(QColor(15, 20, 28, 210), 19, Qt::SolidLine, Qt::RoundCap));
+  p.drawArc(arcRect, bgStart, bgSpan);
 
-  // Active torque sweep: sweeps from 90° (top) toward left or right
+  // 2. Center Zero Reference Tick (at 90°, 12 o'clock)
+  p.setPen(QPen(QColor(255, 255, 255, 115), 2.5, Qt::SolidLine, Qt::RoundCap));
+  p.drawLine(QPointF(cx, y - 6.0f), QPointF(cx, y + 6.0f));
+
+  // 3. Torque Dynamics Calculation
   float clamped = std::clamp(torque, -1.0f, 1.0f);
-  if (std::abs(clamped) > 0.02f) {
-    float sweepAngle = -clamped * (fullSpanDeg / 2.0f);
-    int activeStart = 90 * 16;
-    int activeSpan = (int)std::round(sweepAngle * 16.0f);
+  float abs_torque = std::abs(clamped);
 
-    QColor torqueColor = QColor(255, 255, 255, 230);
-    float absTorque = std::abs(clamped);
-    if (saturated || absTorque > 0.85f) {
-      torqueColor = QColor(248, 113, 113); // alert coral
-    } else if (absTorque > 0.60f) {
-      torqueColor = QColor(245, 158, 11);  // amber warning
-    } else if (lateralActive) {
-      torqueColor = QColor(128, 216, 166); // mint green
-    }
+  const float pill_half_span = 2.6f; // ~100px pill length
+  const float max_deflection = theta_max - pill_half_span - 0.5f; // ~7.9° max travel
+  float pill_center_deg = 90.0f - clamped * max_deflection;
 
-    p.setPen(QPen(torqueColor, 6, Qt::SolidLine, Qt::RoundCap));
-    p.drawArc(arcRect, activeStart, activeSpan);
+  // Colors based on torque magnitude & state
+  QColor pill_core_col = QColor(255, 255, 255, 250);
+  QColor pill_glow_col = QColor(255, 255, 255, 75);
+  QColor trail_col = QColor(255, 255, 255, 95);
+
+  if (saturated || abs_torque > 0.85f) {
+    pill_core_col = QColor(248, 113, 113, 255); // Alert coral red
+    pill_glow_col = QColor(248, 113, 113, 110);
+    trail_col = QColor(248, 113, 113, 170);
+  } else if (abs_torque > 0.60f) {
+    pill_core_col = QColor(245, 158, 11, 255);  // Warning amber
+    pill_glow_col = QColor(245, 158, 11, 100);
+    trail_col = QColor(245, 158, 11, 160);
+  } else if (lateralActive) {
+    pill_core_col = QColor(255, 255, 255, 255);
+    pill_glow_col = QColor(255, 255, 255, 80);
+    trail_col = QColor(128, 216, 166, 140);      // Subtle mint connection trail
+  } else {
+    pill_core_col = QColor(215, 220, 228, 190);
+    pill_glow_col = QColor(255, 255, 255, 30);
+    trail_col = QColor(255, 255, 255, 50);
   }
+
+  // 4. Dynamic Force Sweep Trail (between 90° center and pill center)
+  if (abs_torque > 0.025f) {
+    float trail_span_deg = -clamped * max_deflection;
+    int trailStart = 90 * 16;
+    int trailSpan = (int)std::round(trail_span_deg * 16.0f);
+    p.setPen(QPen(trail_col, 10, Qt::SolidLine, Qt::RoundCap));
+    p.drawArc(arcRect, trailStart, trailSpan);
+  }
+
+  // 5. Active Slider Pill Capsule
+  int pillStart = (int)std::round((pill_center_deg + pill_half_span) * 16.0f);
+  int pillSpan = (int)std::round((-2.0f * pill_half_span) * 16.0f);
+
+  // Soft luminous outer glow around slider pill
+  p.setPen(QPen(pill_glow_col, 20, Qt::SolidLine, Qt::RoundCap));
+  p.drawArc(arcRect, pillStart, pillSpan);
+
+  // Solid bright core of slider pill
+  p.setPen(QPen(pill_core_col, 14, Qt::SolidLine, Qt::RoundCap));
+  p.drawArc(arcRect, pillStart, pillSpan);
+
+  p.restore();
 }
 
 void OnroadHud::drawMiciSteeringWheel(QPainter &p, int cx, int cy, float angle, bool critical) {
@@ -590,7 +633,7 @@ void OnroadHud::drawMiciSteeringWheel(QPainter &p, int cx, int cy, float angle, 
 
   // Exclamation mark if critical
   if (critical && !exclamation_img.isNull()) {
-    p.drawPixmap(cx + 42, cy - exclamation_img.height() / 2, exclamation_img);
+    p.drawPixmap(cx + 52, cy - exclamation_img.height() / 2, exclamation_img);
   }
 }
 
@@ -599,10 +642,10 @@ void OnroadHud::drawTurnIntent(QPainter &p, int cx, int cy, int dir) {
 
   p.save();
   if (dir == 1) { // Left
-    p.translate(cx - 56, cy);
+    p.translate(cx - 68, cy);
     p.drawPixmap(-turn_intent_img.width() / 2, -turn_intent_img.height() / 2, turn_intent_img);
   } else if (dir == 2) { // Right (mirrored horizontally)
-    p.translate(cx + 56, cy);
+    p.translate(cx + 68, cy);
     p.scale(-1, 1);
     p.drawPixmap(-turn_intent_img.width() / 2, -turn_intent_img.height() / 2, turn_intent_img);
   }
@@ -752,7 +795,7 @@ void OnroadHud::paintEvent(QPaintEvent *event) {
   QRect max_rc(bdr_s * 2, bdr_s * 1.5, set_speed_w, 204);
   drawSetSpeedBox(p, max_rc);
 
-  // 3. STEER & TORQUE Gauge box (next to MAX speed) - 200x204
+  // 3. STEER Box (next to MAX speed) - 200x204
   QRect steer_rc(bdr_s * 2 + set_speed_w + 24, bdr_s * 1.5, set_speed_w, 204);
   drawCapsule(p, steer_rc);
 
@@ -761,22 +804,13 @@ void OnroadHud::paintEvent(QPaintEvent *event) {
   p.setPen(steer_lbl_col);
   drawText(p, steer_rc.center().x(), steer_rc.top() + 48, "STEER", 255);
 
-  // Draw dynamic torque arc bar around wheel
+  // Draw enlarged rotating steering wheel (centered with angle text removed)
   int wheel_cx = steer_rc.center().x();
-  int wheel_cy = steer_rc.top() + 115;
-  drawTorqueArcBar(p, wheel_cx, wheel_cy, 46, steerTorque, steerSaturated);
-
-  // Draw release-mici rotating steering wheel
+  int wheel_cy = steer_rc.top() + 124;
   drawMiciSteeringWheel(p, wheel_cx, wheel_cy, steerAngleDeg, wheelCritical);
 
   // Draw lane change turn intent indicator
   drawTurnIntent(p, wheel_cx, wheel_cy, laneChangeDirection);
-
-  // Digital angle below wheel
-  QString angle_str = (steerAngleDeg > 0.0f ? "+" : "") + QString::number(std::round(steerAngleDeg)) + "°";
-  configFont(p, "Inter", 32, "SemiBold");
-  p.setPen(steer_lbl_col);
-  drawText(p, wheel_cx, steer_rc.bottom() - 14, angle_str, 255);
 
   // 4. Current Speed (top-center)
   drawCurrentSpeed(p, rect().center().x(), 180);
@@ -792,7 +826,10 @@ void OnroadHud::paintEvent(QPaintEvent *event) {
   }
   drawStatusCapsule(p, temp_rc, "TEMP", temperature, temp_col);
 
-  // 6. Bottom floating action discs (DM, Settings, & Mode)
+  // 6. Dynamic Torque Arc Bar at bottom center like Comma 4
+  drawBottomTorqueArcBar(p, rect().center().x(), rect().bottom() - 110, steerTorque, steerSaturated);
+
+  // 7. Bottom floating action discs (DM, Settings, & Mode)
   if (!hideDM) {
     int dm_cx = rect().right() - radius / 2 - (bdr_s * 2);
     int dm_cy = rect().bottom() - footer_h / 2;
@@ -807,7 +844,7 @@ void OnroadHud::paintEvent(QPaintEvent *event) {
   int mode_cy = settings_cy;
   drawModeBtn(p, mode_cx, mode_cy, experimental_mode);
 
-  // 7. Right-edge AI Confidence Ball
+  // 8. Right-edge AI Confidence Ball
   int ball_x = rect().right() - bdr_s / 2 - 4;
   int ball_top_y = 120;
   int ball_bot_y = rect().bottom() - footer_h - 10;
