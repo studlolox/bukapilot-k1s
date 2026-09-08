@@ -41,7 +41,10 @@ class OnroadHud : public QWidget {
 public:
   explicit OnroadHud(QWidget *parent);
   void updateState(const UIState &s);
-  void manualMouseEvent(QMouseEvent *e);
+  bool manualMouseEvent(QMouseEvent *e);
+
+protected:
+  void mousePressEvent(QMouseEvent *e) override;
 
 private:
   void drawCapsule(QPainter &p, const QRect &rc);

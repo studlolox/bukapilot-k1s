@@ -215,7 +215,7 @@ void UIState::updateStatus() {
     if (scene.started) {
       status = STATUS_DISENGAGED;
       scene.started_frame = sm->frame;
-      scene.end_to_end = false; // Use lanelines in UI
+      scene.end_to_end = Params().getBool("EndToEndToggle");
       wide_camera = Hardware::TICI() ? Params().getBool("EnableWideCamera") : false;
     }
     started_prev = scene.started;
@@ -237,6 +237,8 @@ UIState::UIState(QObject *parent) : QObject(parent) {
   wide_camera = Hardware::TICI() ? params.getBool("EnableWideCamera") : false;
   prime_type = std::atoi(params.get("PrimeType").c_str());
 
+  ui_update_params(this);
+
   // update timer
   timer = new QTimer(this);
   QObject::connect(timer, &QTimer::timeout, this, &UIState::update);
@@ -247,6 +249,10 @@ void UIState::update() {
   update_sockets(this);
   update_state(this);
   updateStatus();
+
+  if (sm->frame % (UI_FREQ * 2) == 0) {
+    ui_update_params(this);
+  }
 
   if (sm->frame % UI_FREQ == 0) {
     watchdog_kick();

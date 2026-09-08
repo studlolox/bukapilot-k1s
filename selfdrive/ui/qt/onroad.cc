@@ -472,7 +472,7 @@ void OnroadHud::updateState(const UIState &s) {
   }
 }
 
-void OnroadHud::manualMouseEvent(QMouseEvent *e) {
+bool OnroadHud::manualMouseEvent(QMouseEvent *e) {
   QPoint pt = mapFromGlobal(e->globalPos());
 
   int settings_cy = rect().bottom() - 125;
@@ -488,16 +488,18 @@ void OnroadHud::manualMouseEvent(QMouseEvent *e) {
       (e->pos().x() >= settings_cx - 80 && e->pos().x() <= settings_cx + 80 &&
        e->pos().y() >= settings_cy - 80 && e->pos().y() <= settings_cy + 80)) {
     emit openSettings();
-    return;
+    return true;
   }
 
   // Mode button (pill button: E2E / LANES)
-  QRect mode_rc(mode_cx - 120, settings_cy - 50, 240, 100);
+  QRect mode_rc(mode_cx - 130, settings_cy - 55, 260, 110);
   if (mode_rc.contains(pt) || mode_rc.contains(e->pos())) {
     bool next_e2e = !experimental_mode;
     Params().putBool("EndToEndToggle", next_e2e);
+    uiState()->scene.end_to_end = next_e2e;
     setProperty("experimental_mode", next_e2e);
-    return;
+    update();
+    return true;
   }
 
   // Steering Wheel button (right inner)
@@ -505,13 +507,13 @@ void OnroadHud::manualMouseEvent(QMouseEvent *e) {
       (e->pos().x() >= wheel_cx - 80 && e->pos().x() <= wheel_cx + 80 &&
        e->pos().y() >= wheel_cy - 80 && e->pos().y() <= wheel_cy + 80)) {
     emit openSettings();
-    return;
+    return true;
   }
 
   // Driver Monitoring disc (far right)
   if (std::hypot(pt.x() - dm_cx, pt.y() - dm_cy) <= 80) {
     emit openSettings();
-    return;
+    return true;
   }
 
   // Tap MAX Speed capsule to cycle distance gap (1 -> 2 -> 3 -> 1)
@@ -519,7 +521,17 @@ void OnroadHud::manualMouseEvent(QMouseEvent *e) {
   if (max_rc.contains(pt) || max_rc.contains(e->pos())) {
     int next_bars = (distanceBars % 3) + 1;
     setProperty("distanceBars", next_bars);
-    return;
+    return true;
+  }
+
+  return false;
+}
+
+void OnroadHud::mousePressEvent(QMouseEvent *e) {
+  if (manualMouseEvent(e)) {
+    e->accept();
+  } else {
+    QWidget::mousePressEvent(e);
   }
 }
 
@@ -952,10 +964,10 @@ void OnroadHud::drawModeBtn(QPainter &p, int x, int y, bool is_experimental) {
   p.setPen(QPen(QColor(rim_col.red(), rim_col.green(), rim_col.blue(), 230), 3.5, Qt::SolidLine, Qt::RoundCap));
   p.drawRoundedRect(pill_rc, r, r);
 
-  // Text inside pill: "E2E / LANES"
-  configFont(p, "Inter", 26, "Bold");
+  // Text inside pill: "E2E" or "LANES"
+  configFont(p, "Inter", 28, "Bold");
   p.setPen(rim_col);
-  p.drawText(pill_rc, Qt::AlignCenter, is_experimental ? "E2E MODE" : "E2E / LANES");
+  p.drawText(pill_rc, Qt::AlignCenter, is_experimental ? "E2E" : "LANES");
 
   p.restore();
 }
