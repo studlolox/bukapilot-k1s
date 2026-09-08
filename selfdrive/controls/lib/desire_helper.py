@@ -66,11 +66,13 @@ class DesireHelper:
     self.lane_change_timer = 0.0
     self.lane_change_ll_prob = 1.0
     self.keep_pulse_timer = 0.0
-    self.last_alc_cancel = 0
+    self.last_alc_cancel = -ALC_CANCEL_DELAY
     self.prev_blinker = None # Handle direction change
     self.desire = log.LateralPlan.Desire.none
     self.is_alc_enabled = Params().get_bool("IsAlcEnabled")
     self.blinker_below_lane_change_speed = False
+    self.lane_change_latched = False
+    self.blindspot_cleared_time = 0.0
 
   def update(self, carstate, active, lane_change_prob, md=None):
     current_time = time.monotonic()
@@ -93,6 +95,7 @@ class DesireHelper:
     if not ready_for_lane_change:
       self.lane_change_state = LaneChangeState.off
       self.lane_change_direction = LaneChangeDirection.none
+      self.lane_change_latched = False
 
     # If blinker off/blinker direction change during Assisted Lane Change, finish the lane change.
     elif self.lane_change_state == LaneChangeState.laneChangeStarting and (not one_blinker or blinker_dir_changed):
@@ -113,6 +116,7 @@ class DesireHelper:
       # LaneChangeState.off
       if self.lane_change_state == LaneChangeState.off and can_start_lane_change and not self.blinker_below_lane_change_speed:
         self.lane_change_state = LaneChangeState.preLaneChange
+        self.lane_change_direction = LaneChangeDirection.left if leftBlinker else LaneChangeDirection.right
         self.lane_change_ll_prob = 1.0
 
       # LaneChangeState.preLaneChange
@@ -120,14 +124,27 @@ class DesireHelper:
         # Set lane change direction
         self.lane_change_direction = LaneChangeDirection.left if leftBlinker else LaneChangeDirection.right
 
+        blindspot_detected = ((carstate.rightBlindspot and self.lane_change_direction == LaneChangeDirection.right) or
+                              (carstate.leftBlindspot and self.lane_change_direction == LaneChangeDirection.left))
+
         torque_applied = carstate.steeringPressed and \
                          (((steering_torque := carstate.steeringTorque) > 0 and self.lane_change_direction == LaneChangeDirection.left) or
                           (steering_torque < 0 and self.lane_change_direction == LaneChangeDirection.right))
 
+        if torque_applied:
+          self.lane_change_latched = True
+
+        if blindspot_detected:
+          self.blindspot_cleared_time = current_time
+
+        blindspot_cleared = (current_time - self.blindspot_cleared_time) >= 0.5
+
         if not can_start_lane_change:
           self.lane_change_state = LaneChangeState.off
-        elif torque_applied and not blindspot_detected:
+          self.lane_change_latched = False
+        elif (torque_applied or self.lane_change_latched) and not blindspot_detected and blindspot_cleared:
           self.lane_change_state = LaneChangeState.laneChangeStarting
+          self.lane_change_latched = False
 
       # LaneChangeState.laneChangeStarting
       elif self.lane_change_state == LaneChangeState.laneChangeStarting:
@@ -146,6 +163,7 @@ class DesireHelper:
         if self.lane_change_ll_prob > 0.99:
           self.lane_change_direction = LaneChangeDirection.none
           self.lane_change_state = LaneChangeState.preLaneChange if can_start_lane_change else LaneChangeState.off
+          self.lane_change_latched = False
 
     if self.lane_change_state in (LaneChangeState.off, LaneChangeState.preLaneChange):
       self.lane_change_timer = 0.0

@@ -37,12 +37,22 @@ class CarController():
     self.params = Params()
     self.f = Features()
     self.force_use_stock_acc = self.f.has("StockAcc") or self.params.get_bool("UseStockAcc")
+    self.distance_btn_counter = 0
 
   def update(self, enabled, active, CS, frame, actuators, pcm_cancel_cmd, hud_alert,
              left_line, right_line, lead, left_lane_depart, right_lane_depart):
 
     if frame % 50 == 0:
       self.force_use_stock_acc = self.f.has("StockAcc") or self.params.get_bool("UseStockAcc")
+
+    # Long press distance button (2.0s @ 100Hz = 200 frames) toggles between Stock ACC and Openpilot Longitudinal
+    if CS.distance_btn == 1:
+      self.distance_btn_counter += 1
+      if self.distance_btn_counter == 200:
+        self.force_use_stock_acc = not self.force_use_stock_acc
+        self.params.put_bool("UseStockAcc", self.force_use_stock_acc)
+    else:
+      self.distance_btn_counter = 0
 
     lat_active = active and abs(CS.out.steeringTorque) < MAX_USER_TORQUE
 
@@ -149,11 +159,11 @@ class CarController():
       elif CS.CP.openpilotLongitudinalControl:
 
         if self.force_use_stock_acc:
-          if not CS.out.standstill:
-            # Let stock TSS ACC smoothly manage car following and deceleration down to stop
+          if not CS.out.standstill or CS.stock_acc_cmd > 0.1:
+            # Let stock TSS ACC smoothly manage car following and deceleration down to stop, or resume from standstill
             pcm_accel_cmd = CS.stock_acc_cmd
           else:
-            # At complete standstill, lock firm brake hold (-1.5 m/s^2) to prevent forward creep
+            # At complete standstill, lock firm brake hold (-1.5 m/s^2) to prevent forward creep until stock ACC commands motion
             pcm_accel_cmd = -1.5
         else:
           # Pure openpilot longitudinal control

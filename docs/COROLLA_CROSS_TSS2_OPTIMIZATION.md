@@ -208,8 +208,8 @@ Tropical sun creates reflections from the Corolla Cross dashboard onto the winds
 │   └── [✓] Implement auto-resume from standstill (> 2.5m lead movement)
 │
 ├── Phase 3: TSS2 Sensor & CAN Integration
-│   ├── [ ] Connect CAN BSM signals to Assisted Lane Change logic
-│   └── [ ] Add Stock ACC passthrough toggle
+│   ├── [✓] Connect CAN BSM signals to Assisted Lane Change logic
+│   └── [✓] Add Stock ACC passthrough toggle
 │
 ├── Phase 4: Speed Planning & Vision
 │   ├── [ ] Enable Vision-Turn Speed Control (VTSC) with SUV roll limit (2.0 m/s²)
