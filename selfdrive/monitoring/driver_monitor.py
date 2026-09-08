@@ -36,8 +36,8 @@ class DRIVER_MONITOR_SETTINGS():
     self._BLINK_THRESHOLD_SLACK = 0.9 if TICI else 0.77
     self._BLINK_THRESHOLD_STRICT = self._BLINK_THRESHOLD
 
-    self._POSE_PITCH_THRESHOLD = 0.3237
-    self._POSE_PITCH_THRESHOLD_SLACK = 0.3657
+    self._POSE_PITCH_THRESHOLD = 0.4109
+    self._POSE_PITCH_THRESHOLD_SLACK = 0.4529
     self._POSE_PITCH_THRESHOLD_STRICT = self._POSE_PITCH_THRESHOLD
     self._POSE_YAW_THRESHOLD = 0.3109
     self._POSE_YAW_THRESHOLD_SLACK = 0.4294
@@ -45,7 +45,7 @@ class DRIVER_MONITOR_SETTINGS():
     self._PITCH_NATURAL_OFFSET = 0.057 # initial value before offset is learned
     self._YAW_NATURAL_OFFSET = 0.11 # initial value before offset is learned
     self._PITCH_MAX_OFFSET = 0.124
-    self._PITCH_MIN_OFFSET = -0.0881
+    self._PITCH_MIN_OFFSET = -0.175
     self._YAW_MAX_OFFSET = 0.289
     self._YAW_MIN_OFFSET = -0.0246
 

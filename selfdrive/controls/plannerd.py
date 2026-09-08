@@ -20,9 +20,9 @@ def plannerd_thread(sm=None, pm=None):
   use_lanelines = not params.get_bool('EndToEndToggle')
   wide_camera = params.get_bool('EnableWideCamera') if TICI else False
   try:
-    vtsc_mode = int(params.get("VisionTurnSpeedControl") or "1")
+    vtsc_mode = int(params.get("VisionTurnSpeedControl") or "2")
   except Exception:
-    vtsc_mode = 1
+    vtsc_mode = 2
 
   cloudlog.event("e2e mode", on=(not use_lanelines))
 
@@ -43,9 +43,9 @@ def plannerd_thread(sm=None, pm=None):
       if sm.frame % 20 == 0:
         lateral_planner.use_lanelines = not params.get_bool('EndToEndToggle')
         try:
-          vtsc_mode = int(params.get("VisionTurnSpeedControl") or "1")
+          vtsc_mode = int(params.get("VisionTurnSpeedControl") or "2")
         except Exception:
-          vtsc_mode = 1
+          vtsc_mode = 2
 
       lateral_planner.update(sm)
       lateral_planner.publish(sm, pm)

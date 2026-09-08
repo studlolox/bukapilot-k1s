@@ -212,8 +212,8 @@ Tropical sun creates reflections from the Corolla Cross dashboard onto the winds
 │   └── [✓] Add Stock ACC passthrough toggle
 │
 ├── Phase 4: Speed Planning & Vision
-│   ├── [ ] Enable Vision-Turn Speed Control (VTSC) with SUV roll limit (2.0 m/s²)
-│   └── [ ] Tune Driver Monitoring head pose pitch offset (+5°)
+│   ├── [✓] Enable Vision-Turn Speed Control (VTSC) with SUV roll limit (2.0 m/s²)
+│   └── [✓] Tune Driver Monitoring head pose pitch offset (+5°)
 │
 └── Phase 5: K1S Thermal & System Polish
     ├── [ ] Optimize auto-exposure region of interest for dashboard glare

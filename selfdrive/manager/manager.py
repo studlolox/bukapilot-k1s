@@ -78,6 +78,7 @@ def manager_init() -> None:
     ("ResumeWithRes", "0"),
     ("DisableRadar", "0"),
     ("ScreenOffDriving", "0"),
+    ("VisionTurnSpeedControl", "2"),
   ]
   if not PC:
     default_params.append(("LastUpdateTime", datetime.datetime.utcnow().isoformat().encode('utf8')))
