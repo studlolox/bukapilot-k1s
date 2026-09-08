@@ -816,12 +816,6 @@ void OnroadHud::drawBottomTorqueArcBar(QPainter &p, int cx, int y, float torque,
   }
   p.setPen(angle_col);
   drawText(p, cx, y - 120, angle_str, 255);
-
-  // 6. Sub-label underneath: "Steering Reactor Arc"
-  configFont(p, "Inter", 22, "Medium");
-  p.setPen(QColor(156, 163, 175));
-  drawText(p, cx, y - 55, "Steering Reactor Arc", 220);
-
   p.restore();
 }
 
@@ -889,11 +883,6 @@ void OnroadHud::drawSteerBtn(QPainter &p, int x, int y, float angle, bool critic
   p.drawLine(QPointF(x + btn_r + 20, y - 16), QPointF(x + btn_r + 34, y));
   p.drawLine(QPointF(x + btn_r + 34, y), QPointF(x + btn_r + 20, y + 16));
 
-  // 5. Sub-label underneath: "Neon Sequential Turn"
-  configFont(p, "Inter", 22, "Medium");
-  p.setPen(QColor(156, 163, 175));
-  drawText(p, x, y + 74, "Neon Sequential Turn", 220);
-
   p.restore();
 }
 
@@ -938,11 +927,6 @@ void OnroadHud::drawActionBtn(QPainter &p, int x, int y, QPixmap &img,
   p.drawPixmap(x - img_size / 2, y - img_size / 2, img);
   p.setOpacity(1.0);
 
-  // Sub-label underneath: "Settings"
-  configFont(p, "Inter", 22, "Medium");
-  p.setPen(QColor(156, 163, 175));
-  drawText(p, x, y + 74, "Settings", 220);
-
   p.restore();
 }
 
@@ -972,11 +956,6 @@ void OnroadHud::drawModeBtn(QPainter &p, int x, int y, bool is_experimental) {
   configFont(p, "Inter", 26, "Bold");
   p.setPen(rim_col);
   p.drawText(pill_rc, Qt::AlignCenter, is_experimental ? "E2E MODE" : "E2E / LANES");
-
-  // Sub-label underneath: "Mode Toggle"
-  configFont(p, "Inter", 22, "Medium");
-  p.setPen(QColor(156, 163, 175));
-  drawText(p, x, y + 74, "Mode Toggle", 220);
 
   p.restore();
 }
@@ -1046,11 +1025,6 @@ void OnroadHud::drawDriverMonitoringDisc(QPainter &p, int x, int y, bool active,
     p.setPen(QPen(QColor(255, 255, 255, 200), 1.5));
     p.drawEllipse(QPointF(gaze_x, gaze_y), 5.0f, 5.0f);
   }
-
-  // 5. Sub-label underneath: "Driver Monitoring"
-  configFont(p, "Inter", 22, "Medium");
-  p.setPen(QColor(156, 163, 175));
-  drawText(p, x, y + 74, "Driver Monitoring", 220);
 
   p.restore();
 }
