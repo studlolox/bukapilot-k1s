@@ -177,6 +177,8 @@ class Controls:
     self.alc_speed_below = False                  # If ALC was doing lane change when speed changed to below min speed
     self.prev_enough_lane_change_speed = False    # If the previous speed was enough for ALC
     self.blinker_has_lane_change = False          # If there was any ALC lane change while the blinker was on
+    self.lead_departed = False                    # Track if lead vehicle moved from standstill for resume alert
+    self.lead_departed_frames = 0
 
     # TODO: no longer necessary, aside from process replay
     self.sm['liveParameters'].valid = True
@@ -315,6 +317,28 @@ class Controls:
     planner_fcw = enabled and self.sm['longitudinalPlan'].fcw
     if planner_fcw or model_fcw:
       self.events.add(EventName.fcw)
+
+    # Check for lead vehicle moving while latched at standstill (ResumeWithRes)
+    if enabled and CS.cruiseState.standstill:
+      lead = self.sm['radarState'].leadOne
+      stock_acc_cmd = getattr(self.CI.CS, 'stock_acc_cmd', 0.0) if hasattr(self.CI, 'CS') else 0.0
+      plan = self.sm['longitudinalPlan']
+      lead_moving = (lead.status and (lead.vLead > 0.5 or lead.vRel > 0.5)) or \
+                    (stock_acc_cmd > 0.2) or \
+                    (plan.hasLead and len(plan.speeds) > 0 and plan.speeds[-1] > 0.5)
+      if lead_moving:
+        self.lead_departed_frames += 1
+      else:
+        self.lead_departed_frames = 0
+
+      if self.lead_departed_frames > 15:  # ~150ms debounce against sensor noise
+        self.lead_departed = True
+
+      if self.lead_departed:
+        self.events.add(EventName.resumeRequired)
+    else:
+      self.lead_departed = False
+      self.lead_departed_frames = 0
 
     if TICI:
       for m in messaging.drain_sock(self.log_sock, wait_for_one=False):

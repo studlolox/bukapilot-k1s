@@ -10,6 +10,12 @@ if 'cereal' not in sys.modules:
   sys.modules['cereal.log'] = cereal_mock.log
 if 'opendbc.can.packer' not in sys.modules:
   sys.modules['opendbc.can.packer'] = MagicMock()
+if 'serial' not in sys.modules:
+  sys.modules['serial'] = MagicMock()
+if 'numpy' not in sys.modules:
+  sys.modules['numpy'] = MagicMock()
+if 'smbus2' not in sys.modules:
+  sys.modules['smbus2'] = MagicMock()
 
 import unittest
 from cereal import log
@@ -223,6 +229,98 @@ class TestCorollaCrossPhase3(unittest.TestCase):
     self.assertTrue(model.update(v_ego_raw=0.005, gas_pressed=False, res_pressed=False, cruise_enabled=True))
     self.assertFalse(model.update(v_ego_raw=0.005, gas_pressed=False, res_pressed=False, cruise_enabled=False))
     self.assertFalse(model.standstill_latched)
+
+  def test_lead_vehicle_moved_resume_alert(self):
+    """Verify lead departure detection, 150ms debounce, and RES+ unlatching state machine."""
+    class StandstillResumeAlertModel:
+      def __init__(self):
+        self.lead_departed = False
+        self.lead_departed_frames = 0
+
+      def update(self, enabled, cruise_standstill, lead_status, lead_v_lead, lead_v_rel, stock_acc_cmd, plan_has_lead, plan_speed_last):
+        events = []
+        if enabled and cruise_standstill:
+          lead_moving = (lead_status and (lead_v_lead > 0.5 or lead_v_rel > 0.5)) or \
+                        (stock_acc_cmd > 0.2) or \
+                        (plan_has_lead and plan_speed_last > 0.5)
+          if lead_moving:
+            self.lead_departed_frames += 1
+          else:
+            self.lead_departed_frames = 0
+
+          if self.lead_departed_frames > 15:
+            self.lead_departed = True
+
+          if self.lead_departed:
+            events.append("resumeRequired")
+        else:
+          self.lead_departed = False
+          self.lead_departed_frames = 0
+
+        return events
+
+    model = StandstillResumeAlertModel()
+
+    # Step 1: Stopped at red light behind lead car (stationary: vLead=0)
+    for _ in range(50):
+      events = model.update(enabled=True, cruise_standstill=True, lead_status=True,
+                            lead_v_lead=0.0, lead_v_rel=0.0, stock_acc_cmd=0.0,
+                            plan_has_lead=True, plan_speed_last=0.0)
+      self.assertEqual(events, [])
+      self.assertFalse(model.lead_departed)
+
+    # Step 2: Brief radar glitch / sensor noise (5 frames of moving lead, < 15 frames)
+    for _ in range(5):
+      events = model.update(enabled=True, cruise_standstill=True, lead_status=True,
+                            lead_v_lead=1.2, lead_v_rel=1.2, stock_acc_cmd=0.0,
+                            plan_has_lead=True, plan_speed_last=0.0)
+      self.assertEqual(events, [])
+      self.assertFalse(model.lead_departed)
+
+    # Sensor noise returns to stationary
+    events = model.update(enabled=True, cruise_standstill=True, lead_status=True,
+                          lead_v_lead=0.0, lead_v_rel=0.0, stock_acc_cmd=0.0,
+                          plan_has_lead=True, plan_speed_last=0.0)
+    self.assertEqual(events, [])
+    self.assertEqual(model.lead_departed_frames, 0)
+
+    # Step 3: Traffic light turns green, lead vehicle actually starts driving away
+    # Sustained motion for 16 frames (> 15 frames debounce)
+    for i in range(15):
+      events = model.update(enabled=True, cruise_standstill=True, lead_status=True,
+                            lead_v_lead=1.5, lead_v_rel=1.5, stock_acc_cmd=0.0,
+                            plan_has_lead=True, plan_speed_last=0.0)
+      self.assertEqual(events, [])
+
+    # Frame 16: Triggers alert!
+    events = model.update(enabled=True, cruise_standstill=True, lead_status=True,
+                          lead_v_lead=2.0, lead_v_rel=2.0, stock_acc_cmd=0.0,
+                          plan_has_lead=True, plan_speed_last=0.0)
+    self.assertIn("resumeRequired", events)
+    self.assertTrue(model.lead_departed)
+
+    # Step 4: Lead car speeds ahead into the distance (latches alert while stopped)
+    events = model.update(enabled=True, cruise_standstill=True, lead_status=False,
+                          lead_v_lead=0.0, lead_v_rel=0.0, stock_acc_cmd=0.0,
+                          plan_has_lead=False, plan_speed_last=0.0)
+    self.assertIn("resumeRequired", events)
+    self.assertTrue(model.lead_departed)
+
+    # Step 5: Driver clicks RES+ (clearing cruise_standstill to False)
+    events = model.update(enabled=True, cruise_standstill=False, lead_status=False,
+                          lead_v_lead=0.0, lead_v_rel=0.0, stock_acc_cmd=0.0,
+                          plan_has_lead=False, plan_speed_last=0.0)
+    self.assertEqual(events, [])
+    self.assertFalse(model.lead_departed)
+
+    # Step 6: Test TSS2 stock ACC mode triggering (stock_acc_cmd > 0.2)
+    model = StandstillResumeAlertModel()
+    for _ in range(16):
+      events = model.update(enabled=True, cruise_standstill=True, lead_status=False,
+                            lead_v_lead=0.0, lead_v_rel=0.0, stock_acc_cmd=0.4,
+                            plan_has_lead=False, plan_speed_last=0.0)
+    self.assertIn("resumeRequired", events)
+    self.assertTrue(model.lead_departed)
 
 
 if __name__ == '__main__':
