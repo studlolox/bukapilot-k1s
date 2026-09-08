@@ -9,7 +9,7 @@
 #include "selfdrive/hardware/hw.h"
 
 QString getVersion() {
-  static QString version =  QString::fromStdString(Params().get("Version"));
+  static QString version = QString::fromStdString(Params().get("Version"));
   return version;
 }
 
@@ -21,9 +21,7 @@ QString getBrandVersion() {
   return getBrand() + " v" + getVersion().left(14).trimmed();
 }
 
-QString getUserAgent() {
-  return "ezpilot-" + getVersion();
-}
+QString getUserAgent() { return "EZPilot-" + getVersion(); }
 
 std::optional<QString> getDongleId() {
   std::string id = Params().get("DongleId");
@@ -35,19 +33,20 @@ std::optional<QString> getDongleId() {
   }
 }
 
-void configFont(QPainter &p, const QString &family, int size, const QString &style) {
+void configFont(QPainter &p, const QString &family, int size,
+                const QString &style) {
   QFont f(family);
   f.setPixelSize(size);
   f.setStyleName(style);
   p.setFont(f);
 }
 
-void clearLayout(QLayout* layout) {
-  while (QLayoutItem* item = layout->takeAt(0)) {
-    if (QWidget* widget = item->widget()) {
+void clearLayout(QLayout *layout) {
+  while (QLayoutItem *item = layout->takeAt(0)) {
+    if (QWidget *widget = item->widget()) {
       widget->deleteLater();
     }
-    if (QLayout* childLayout = item->layout()) {
+    if (QLayout *childLayout = item->layout()) {
       clearLayout(childLayout);
     }
     delete item;
@@ -98,35 +97,41 @@ void initApp() {
   }
 }
 
-void swagLogMessageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg) {
+void swagLogMessageHandler(QtMsgType type, const QMessageLogContext &context,
+                           const QString &msg) {
   static std::map<QtMsgType, int> levels = {
-    {QtMsgType::QtDebugMsg, CLOUDLOG_DEBUG},
-    {QtMsgType::QtInfoMsg, CLOUDLOG_INFO},
-    {QtMsgType::QtWarningMsg, CLOUDLOG_WARNING},
-    {QtMsgType::QtCriticalMsg, CLOUDLOG_ERROR},
-    {QtMsgType::QtSystemMsg, CLOUDLOG_ERROR},
-    {QtMsgType::QtFatalMsg, CLOUDLOG_CRITICAL},
+      {QtMsgType::QtDebugMsg, CLOUDLOG_DEBUG},
+      {QtMsgType::QtInfoMsg, CLOUDLOG_INFO},
+      {QtMsgType::QtWarningMsg, CLOUDLOG_WARNING},
+      {QtMsgType::QtCriticalMsg, CLOUDLOG_ERROR},
+      {QtMsgType::QtSystemMsg, CLOUDLOG_ERROR},
+      {QtMsgType::QtFatalMsg, CLOUDLOG_CRITICAL},
   };
 
   std::string file, function;
-  if (context.file != nullptr) file = context.file;
-  if (context.function != nullptr) function = context.function;
+  if (context.file != nullptr)
+    file = context.file;
+  if (context.function != nullptr)
+    function = context.function;
 
   auto bts = msg.toUtf8();
-  cloudlog_e(levels[type], file.c_str(), context.line, function.c_str(), "%s", bts.constData());
+  cloudlog_e(levels[type], file.c_str(), context.line, function.c_str(), "%s",
+             bts.constData());
 }
 
-
-QWidget* topWidget (QWidget* widget) {
-  while (widget->parentWidget() != nullptr) widget=widget->parentWidget();
+QWidget *topWidget(QWidget *widget) {
+  while (widget->parentWidget() != nullptr)
+    widget = widget->parentWidget();
   return widget;
 }
 
-QPixmap loadPixmap(const QString &fileName, const QSize &size, Qt::AspectRatioMode aspectRatioMode) {
+QPixmap loadPixmap(const QString &fileName, const QSize &size,
+                   Qt::AspectRatioMode aspectRatioMode) {
   if (size.isEmpty()) {
     return QPixmap(fileName);
   } else {
-    return QPixmap(fileName).scaled(size, aspectRatioMode, Qt::SmoothTransformation);
+    return QPixmap(fileName).scaled(size, aspectRatioMode,
+                                    Qt::SmoothTransformation);
   }
 }
 
@@ -136,7 +141,8 @@ std::string exec(const char *cmd) {
   char buffer[128];
   std::string result = "";
   FILE *pipe = popen(cmd, "r");
-  if (!pipe) throw std::runtime_error("popen() failed!");
+  if (!pipe)
+    throw std::runtime_error("popen() failed!");
   try {
     while (fgets(buffer, sizeof buffer, pipe) != NULL) {
       result += buffer;

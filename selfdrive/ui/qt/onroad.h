@@ -48,7 +48,8 @@ private:
   void drawConfidenceBall(QPainter &p, int x, int top_y, int bottom_y, float confidence);
   void drawCurrentSpeed(QPainter &p, int cx, int y);
   void drawMiciSteeringWheel(QPainter &p, int cx, int cy, float angle, bool critical);
-  void drawBottomTorqueArcBar(QPainter &p, int cx, int y, float torque, bool saturated);
+  void drawSteerBtn(QPainter &p, int x, int y, float angle, bool critical, int dir);
+  void drawBottomTorqueArcBar(QPainter &p, int cx, int y, float torque, bool saturated, float max_half_w = 210.0f);
   void drawTurnIntent(QPainter &p, int cx, int cy, int dir);
   void drawStatusCapsule(QPainter &p, const QRect &rc, const QString &label, const QString &val, const QColor &color);
   void drawActionBtn(QPainter &p, int x, int y, QPixmap &img, bool active);

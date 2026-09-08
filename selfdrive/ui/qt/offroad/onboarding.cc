@@ -6,8 +6,8 @@
 #include <QQuickWidget>
 #include <QVBoxLayout>
 
-#include "selfdrive/common/util.h"
 #include "selfdrive/common/params.h"
+#include "selfdrive/common/util.h"
 #include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/qt/widgets/input.h"
 
@@ -23,7 +23,8 @@ void TrainingGuide::mouseReleaseEvent(QMouseEvent *e) {
 
   if (boundingRect[currentIndex].contains(e->x(), e->y())) {
     currentIndex += 1;
-  } else if (currentIndex == (boundingRect.size() - 2) && boundingRect.last().contains(e->x(), e->y())) {
+  } else if (currentIndex == (boundingRect.size() - 2) &&
+             boundingRect.last().contains(e->x(), e->y())) {
     currentIndex = 0;
   }
 
@@ -36,8 +37,10 @@ void TrainingGuide::mouseReleaseEvent(QMouseEvent *e) {
 }
 
 void TrainingGuide::showEvent(QShowEvent *event) {
-  img_path = width() == WIDE_WIDTH ? "../assets/training_wide/" : "../assets/training/";
-  boundingRect = width() == WIDE_WIDTH ? boundingRectWide : boundingRectStandard;
+  img_path = width() == WIDE_WIDTH ? "../assets/training_wide/"
+                                   : "../assets/training/";
+  boundingRect =
+      width() == WIDE_WIDTH ? boundingRectWide : boundingRectStandard;
 
   currentIndex = 0;
   image.load(img_path + "step0.png");
@@ -92,17 +95,18 @@ void TermsPage::showEvent(QShowEvent *event) {
   main_layout->addWidget(text, 1);
   main_layout->addSpacing(50);
 
-  QObject *obj = (QObject*)text->rootObject();
+  QObject *obj = (QObject *)text->rootObject();
   QObject::connect(obj, SIGNAL(scroll()), SLOT(enableAccept()));
 
-  QHBoxLayout* buttons = new QHBoxLayout;
+  QHBoxLayout *buttons = new QHBoxLayout;
   buttons->setMargin(0);
   buttons->setSpacing(45);
   main_layout->addLayout(buttons);
 
   QPushButton *decline_btn = new QPushButton("Decline");
   buttons->addWidget(decline_btn);
-  QObject::connect(decline_btn, &QPushButton::clicked, this, &TermsPage::declinedTerms);
+  QObject::connect(decline_btn, &QPushButton::clicked, this,
+                   &TermsPage::declinedTerms);
 
   accept_btn = new QPushButton("Scroll to accept");
   accept_btn->setEnabled(false);
@@ -115,7 +119,8 @@ void TermsPage::showEvent(QShowEvent *event) {
     }
   )");
   buttons->addWidget(accept_btn);
-  QObject::connect(accept_btn, &QPushButton::clicked, this, &TermsPage::acceptedTerms);
+  QObject::connect(accept_btn, &QPushButton::clicked, this,
+                   &TermsPage::acceptedTerms);
 }
 
 void TermsPage::enableAccept() {
@@ -133,19 +138,21 @@ void DeclinePage::showEvent(QShowEvent *event) {
   main_layout->setSpacing(40);
 
   QLabel *text = new QLabel(this);
-  text->setText("You must accept the Terms and Conditions in order to use ezpilot.");
+  text->setText(
+      "You must accept the Terms and Conditions in order to use EZPilot.");
   text->setStyleSheet(R"(font-size: 80px; font-weight: 300; margin: 200px;)");
   text->setWordWrap(true);
   main_layout->addWidget(text, 0, Qt::AlignCenter);
 
-  QHBoxLayout* buttons = new QHBoxLayout;
+  QHBoxLayout *buttons = new QHBoxLayout;
   buttons->setSpacing(45);
   main_layout->addLayout(buttons);
 
   QPushButton *back_btn = new QPushButton("Back");
   buttons->addWidget(back_btn);
 
-  QObject::connect(back_btn, &QPushButton::clicked, this, &DeclinePage::getBack);
+  QObject::connect(back_btn, &QPushButton::clicked, this,
+                   &DeclinePage::getBack);
 
   QPushButton *decline_btn = new QPushButton(QString("Decline, power off"));
   decline_btn->setStyleSheet("background-color: #B73D3D");
@@ -170,9 +177,10 @@ OnboardingWindow::OnboardingWindow(QWidget *parent) : QStackedWidget(parent) {
   std::string current_terms_version = params.get("TermsVersion");
   std::string current_training_version = params.get("TrainingVersion");
   accepted_terms = params.get("HasAcceptedTerms") == current_terms_version;
-  training_done = params.get("CompletedTrainingVersion") == current_training_version;
+  training_done =
+      params.get("CompletedTrainingVersion") == current_training_version;
 
-  TermsPage* terms = new TermsPage(this);
+  TermsPage *terms = new TermsPage(this);
   addWidget(terms);
   connect(terms, &TermsPage::acceptedTerms, [=]() {
     Params().put("HasAcceptedTerms", current_terms_version);
@@ -181,7 +189,7 @@ OnboardingWindow::OnboardingWindow(QWidget *parent) : QStackedWidget(parent) {
   });
   connect(terms, &TermsPage::declinedTerms, [=]() { setCurrentIndex(2); });
 
-  TrainingGuide* tr = new TrainingGuide(this);
+  TrainingGuide *tr = new TrainingGuide(this);
   addWidget(tr);
   connect(tr, &TrainingGuide::completedTraining, [=]() {
     training_done = true;
@@ -189,7 +197,7 @@ OnboardingWindow::OnboardingWindow(QWidget *parent) : QStackedWidget(parent) {
     updateActiveScreen();
   });
 
-  DeclinePage* declinePage = new DeclinePage(this);
+  DeclinePage *declinePage = new DeclinePage(this);
   addWidget(declinePage);
   connect(declinePage, &DeclinePage::getBack, [=]() { updateActiveScreen(); });
 

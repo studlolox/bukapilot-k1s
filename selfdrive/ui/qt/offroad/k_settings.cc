@@ -13,96 +13,112 @@
 #include "selfdrive/common/params.h"
 #include "selfdrive/common/util.h"
 #include "selfdrive/hardware/hw.h"
+#include "selfdrive/ui/qt/qt_window.h"
+#include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/qt/widgets/controls.h"
-#include "selfdrive/ui/qt/widgets/popup.h"
 #include "selfdrive/ui/qt/widgets/input.h"
+#include "selfdrive/ui/qt/widgets/popup.h"
 #include "selfdrive/ui/qt/widgets/scrollview.h"
 #include "selfdrive/ui/qt/widgets/ssh_keys.h"
 #include "selfdrive/ui/qt/widgets/toggle.h"
 #include "selfdrive/ui/ui.h"
-#include "selfdrive/ui/qt/util.h"
-#include "selfdrive/ui/qt/qt_window.h"
 
 TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
   // param, title, desc, icon, restart_required
   std::vector<std::tuple<QString, QString, QString, QString, bool>> toggles{
-    {
-      "OpenpilotEnabledToggle",
-      "Enable ezpilot",
-      "Use the ezpilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature. Changing this setting takes effect when the car is powered off.",
-      "../assets/kommu/icon_ezpilot.png",
-      true,
-    },
-    {
-      "IsLdwEnabled",
-      "Enable Lane Departure Warnings",
-      "Receive alerts to steer back into the lane when your vehicle drifts over a detected lane line without a turn signal activated while driving over 31 mph (50 km/h).",
-      "../assets/kommu/icon_warning.png",
-      true,
-    },
-    {
-      "IsAlcEnabled",
-      "Enable Assisted Lane Change",
-      "Assisted Lane Change will assist your vehicle in a single lane change when a steering nudge and the vehicle's signal lights are turned on. This features works over 31mph (50 km/h).",
-      "../assets/kommu/icon_ezpilot.png",
-      true,
-    },
-    {
-      "IsRHD",
-      "Enable Right-Hand Drive",
-      "Allow ezpilot to obey left-hand traffic conventions and perform driver monitoring on right driver seat.",
-      "../assets/kommu/icon_ezpilot_mirrored.png",
-      true,
-    },
-    {
-      "QuietMode",
-      "Quiet Mode",
-      "Receive only safety critical alerts.",
-      "../assets/kommu/quiet_mode.png",
-      false,
-    },
-    {
-      "LogVideoWifiOnly",
-      "Upload Drive Video via Wi-Fi Only",
-      "Enable upload of on-the-road driving footage via Wi-Fi only, mobile data will not be used for uploading driving footage.",
-      "../assets/offroad/icon_road.png",
-      false,
-    },
-    {
-      "DisableVideoRecording",
-      "Disable Road Video Recording",
-      "Disable recording road camera footage to internal storage. Significantly reduces device temperature, power draw, and flash memory wear while preserving all driving assistance features.",
-      "../assets/offroad/icon_road.png",
-      true,
-    },
-    {
-      "DisableRadar",
-      "ezpilot Longitudinal Control",
-      "ezpilot will disable the car's radar and will take over control of gas and brakes. Warning: this disables AEB!",
-      "../assets/offroad/icon_speed_limit.png",
-      true,
-    },
-    {
-      "UseStockAcc",
-      "Stock Longitudinal Control",
-      "ezpilot will use the stock ACC instead of ezpilot's ACC.",
-      "../assets/offroad/icon_speed_limit.png",
-      false,
-    },
-    {
-      "ResumeWithRes",
-      "Resume from Stop with RES+",
-      "Require pressing the steering wheel RES+ button or tapping the accelerator to resume driving from a complete stop. When disabled, the car automatically resumes when the vehicle ahead moves.",
-      "../assets/offroad/icon_speed_limit.png",
-      false,
-    },
-    {
-      "ScreenOffDriving",
-      "Screen Off While Driving",
-      "Turn off the screen after 15 seconds of driving with no interaction. The screen automatically wakes up when tapped or when a driving alert occurs.",
-      "../assets/offroad/icon_shell.png",
-      false,
-    },
+      {
+          "OpenpilotEnabledToggle",
+          "Enable EZPilot",
+          "Use the EZPilot system for adaptive cruise control and lane keep "
+          "driver assistance. Your attention is required at all times to use "
+          "this feature. Changing this setting takes effect when the car is "
+          "powered off.",
+          "../assets/kommu/icon_ezpilot.png",
+          true,
+      },
+      {
+          "IsLdwEnabled",
+          "Enable Lane Departure Warnings",
+          "Receive alerts to steer back into the lane when your vehicle drifts "
+          "over a detected lane line without a turn signal activated while "
+          "driving over 31 mph (50 km/h).",
+          "../assets/kommu/icon_warning.png",
+          true,
+      },
+      {
+          "IsAlcEnabled",
+          "Enable Assisted Lane Change",
+          "Assisted Lane Change will assist your vehicle in a single lane "
+          "change when a steering nudge and the vehicle's signal lights are "
+          "turned on. This features works over 31mph (50 km/h).",
+          "../assets/kommu/icon_ezpilot.png",
+          true,
+      },
+      {
+          "IsRHD",
+          "Enable Right-Hand Drive",
+          "Allow EZPilot to obey left-hand traffic conventions and perform "
+          "driver monitoring on right driver seat.",
+          "../assets/kommu/icon_ezpilot_mirrored.png",
+          true,
+      },
+      {
+          "QuietMode",
+          "Quiet Mode",
+          "Receive only safety critical alerts.",
+          "../assets/kommu/quiet_mode.png",
+          false,
+      },
+      {
+          "LogVideoWifiOnly",
+          "Upload Drive Video via Wi-Fi Only",
+          "Enable upload of on-the-road driving footage via Wi-Fi only, mobile "
+          "data will not be used for uploading driving footage.",
+          "../assets/offroad/icon_road.png",
+          false,
+      },
+      {
+          "DisableVideoRecording",
+          "Disable Road Video Recording",
+          "Disable recording road camera footage to internal storage. "
+          "Significantly reduces device temperature, power draw, and flash "
+          "memory wear while preserving all driving assistance features.",
+          "../assets/offroad/icon_road.png",
+          true,
+      },
+      {
+          "DisableRadar",
+          "EZPilot Longitudinal Control",
+          "EZPilot will disable the car's radar and will take over control of "
+          "gas and brakes. Warning: this disables AEB!",
+          "../assets/offroad/icon_speed_limit.png",
+          true,
+      },
+      {
+          "UseStockAcc",
+          "Stock Longitudinal Control",
+          "EZPilot will use the stock ACC instead of EZPilot's ACC.",
+          "../assets/offroad/icon_speed_limit.png",
+          false,
+      },
+      {
+          "ResumeWithRes",
+          "Resume from Stop with RES+",
+          "Require pressing the steering wheel RES+ button or tapping the "
+          "accelerator to resume driving from a complete stop. When disabled, "
+          "the car automatically resumes when the vehicle ahead moves.",
+          "../assets/offroad/icon_speed_limit.png",
+          false,
+      },
+      {
+          "ScreenOffDriving",
+          "Screen Off While Driving",
+          "Turn off the screen after 15 seconds of driving with no "
+          "interaction. The screen automatically wakes up when tapped or when "
+          "a driving alert occurs.",
+          "../assets/offroad/icon_shell.png",
+          false,
+      },
   };
 
   Params params;
@@ -118,12 +134,14 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
   }
 
   auto dm_toggle = new ConfirmParamControl(
-    "IgnoreDM",
-    "Disable Driver Monitoring",
-    "Ignore driver monitoring alerts and disengagements. WARNING: This disables driver attentiveness checks and will not warn or disengage when you are distracted.",
-    "../assets/offroad/icon_monitoring.png",
-    "WARNING: Disabling Driver Monitoring disables attentiveness checks!\n\nAre you sure you want to proceed?",
-    this);
+      "IgnoreDM", "Disable Driver Monitoring",
+      "Ignore driver monitoring alerts and disengagements. WARNING: This "
+      "disables driver attentiveness checks and will not warn or disengage "
+      "when you are distracted.",
+      "../assets/offroad/icon_monitoring.png",
+      "WARNING: Disabling Driver Monitoring disables attentiveness "
+      "checks!\n\nAre you sure you want to proceed?",
+      this);
   bool dm_locked = params.getBool("IgnoreDMLock");
   dm_toggle->setEnabled(!dm_locked);
   if (!dm_locked) {
@@ -137,13 +155,15 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
     params.put("VisionTurnSpeedControl", vtsc_val);
   }
   QString vtsc_text = "E2E Only";
-  if (vtsc_val == "0") vtsc_text = "Off";
-  else if (vtsc_val == "2") vtsc_text = "Always On";
+  if (vtsc_val == "0")
+    vtsc_text = "Off";
+  else if (vtsc_val == "2")
+    vtsc_text = "Always On";
 
   vtscBtn = new ButtonControl(
-    "Vision Turn Speed Control (VTSC)",
-    vtsc_text,
-    "Automatically decelerates ahead of sharp turns and highway curves using vision AI curvature prediction. Choose Off, E2E Only, or Always On.");
+      "Vision Turn Speed Control (VTSC)", vtsc_text,
+      "Automatically decelerates ahead of sharp turns and highway curves using "
+      "vision AI curvature prediction. Choose Off, E2E Only, or Always On.");
   QObject::connect(vtscBtn, &ButtonControl::clicked, [=]() {
     std::string cur = Params().get("VisionTurnSpeedControl");
     std::string next_val = "1";
@@ -174,9 +194,12 @@ void TogglesPanel::showEvent(QShowEvent *event) {
   }
   if (vtscBtn) {
     std::string cur = Params().get("VisionTurnSpeedControl");
-    if (cur == "0") vtscBtn->setText("Off");
-    else if (cur == "2") vtscBtn->setText("Always On");
-    else vtscBtn->setText("E2E Only");
+    if (cur == "0")
+      vtscBtn->setText("Off");
+    else if (cur == "2")
+      vtscBtn->setText("Always On");
+    else
+      vtscBtn->setText("E2E Only");
   }
   ListWidget::showEvent(event);
 }
@@ -193,22 +216,27 @@ void TogglesPanel::updateState(const UIState &s) {
 
 DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
   addItem(new LabelControl("Dongle ID", getDongleId().value_or("N/A")));
-  serialBtn = new ButtonControl("Serial", params.get("HardwareSerial").c_str(), "", true);
+  serialBtn = new ButtonControl("Serial", params.get("HardwareSerial").c_str(),
+                                "", true);
   addItem(serialBtn);
   testBtn = new ButtonControl("QC Test", "Start");
   replaceSplashBtn = new ButtonControl("Replace Splash Image", "Replace");
   dumpTmuxBtn = new ButtonControl("Dump TMUX", "Dump");
 
   // offroad-only buttons
-  auto dcamBtn = new ButtonControl("Driver Camera", "PREVIEW",
-                                   "Preview the driver facing camera to help optimize device mounting position for best driver monitoring experience. (vehicle must be off)");
+  auto dcamBtn = new ButtonControl(
+      "Driver Camera", "PREVIEW",
+      "Preview the driver facing camera to help optimize device mounting "
+      "position for best driver monitoring experience. (vehicle must be off)");
   connect(dcamBtn, &ButtonControl::clicked, [=]() { emit showDriverView(); });
   addItem(dcamBtn);
 
   resetCalibBtn = new ButtonControl("Reset Calibration", "RESET", " ");
-  connect(resetCalibBtn, &ButtonControl::showDescription, this, &DevicePanel::updateCalibDescription);
+  connect(resetCalibBtn, &ButtonControl::showDescription, this,
+          &DevicePanel::updateCalibDescription);
   connect(resetCalibBtn, &ButtonControl::clicked, [&]() {
-    if (ConfirmationDialog::confirm("Are you sure to\nReset Calibration?", this)) {
+    if (ConfirmationDialog::confirm("Are you sure to\nReset Calibration?",
+                                    this)) {
       params.remove("CalibrationParams");
     }
   });
@@ -222,30 +250,30 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
       addItem(dumpTmuxBtn);
 
       connect(replaceSplashBtn, &ButtonControl::clicked, [=]() {
-        std::system("dd if=/data/openpilot/selfdrive/assets/newsplash.img of=/dev/block/bootdevice/by-name/splash");
+        std::system("dd if=/data/openpilot/selfdrive/assets/newsplash.img "
+                    "of=/dev/block/bootdevice/by-name/splash");
       });
       connect(dumpTmuxBtn, &ButtonControl::clicked, [=]() {
-        QString output = exec("tmux capture-pane -pS -1000 | nc termbin.com 9999").c_str();
+        QString output =
+            exec("tmux capture-pane -pS -1000 | nc termbin.com 9999").c_str();
         Popup("Termbin URL", output, Popup::OK, this).exec();
       });
-
 
       connect(testBtn, &ButtonControl::clicked, [=]() {
         std::string filename = "_report";
 
-        if ( access( filename.c_str(), F_OK ) != -1 ) {
+        if (access(filename.c_str(), F_OK) != -1) {
           QString test_output = exec("cat _report").c_str();
           std::system("rm _report");
           std::system("rm -rf /data/media/0/realdata/");
           testBtn->setText("Restart");
           Popup("QC Report", test_output, Popup::OK, this).exec();
-        }
-        else {
+        } else {
           if (!params.getBool("IsOffroad")) {
             ConfirmationDialog::alert("Ensure ignition is off first!", this);
-          }
-          else {
-            if (ConfirmationDialog::confirm("Spoof calibration. Proceed?", this)) {
+          } else {
+            if (ConfirmationDialog::confirm("Spoof calibration. Proceed?",
+                                            this)) {
               exec("/data/openpilot/selfdrive/test/qc_test.py -v &> _report &");
               testBtn->setText("Report");
             }
@@ -278,15 +306,18 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
   QPushButton *reboot_btn = new QPushButton("Reboot");
   reboot_btn->setObjectName("reboot_btn");
   power_layout->addWidget(reboot_btn);
-  QObject::connect(reboot_btn, &QPushButton::clicked, this, &DevicePanel::reboot);
+  QObject::connect(reboot_btn, &QPushButton::clicked, this,
+                   &DevicePanel::reboot);
 
   QPushButton *poweroff_btn = new QPushButton("Power Off");
   poweroff_btn->setObjectName("poweroff_btn");
   power_layout->addWidget(poweroff_btn);
-  QObject::connect(poweroff_btn, &QPushButton::clicked, this, &DevicePanel::poweroff);
+  QObject::connect(poweroff_btn, &QPushButton::clicked, this,
+                   &DevicePanel::poweroff);
 
   if (Hardware::TICI()) {
-    connect(uiState(), &UIState::offroadTransition, poweroff_btn, &QPushButton::setVisible);
+    connect(uiState(), &UIState::offroadTransition, poweroff_btn,
+            &QPushButton::setVisible);
   }
 
   setStyleSheet(R"(
@@ -300,20 +331,24 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
 
 void DevicePanel::updateCalibDescription() {
   QString desc =
-      "ezpilot requires the device to be mounted within 4° left or right and "
-      "within 5° up or 8° down. ezpilot is continuously calibrating, resetting is rarely required.";
+      "EZPilot requires the device to be mounted within 4° left or right and "
+      "within 5° up or 8° down. EZPilot is continuously calibrating, resetting "
+      "is rarely required.";
   std::string calib_bytes = Params().get("CalibrationParams");
   if (!calib_bytes.empty()) {
     try {
       AlignedBuffer aligned_buf;
-      capnp::FlatArrayMessageReader cmsg(aligned_buf.align(calib_bytes.data(), calib_bytes.size()));
+      capnp::FlatArrayMessageReader cmsg(
+          aligned_buf.align(calib_bytes.data(), calib_bytes.size()));
       auto calib = cmsg.getRoot<cereal::Event>().getLiveCalibration();
       if (calib.getCalStatus() != 0) {
         double pitch = calib.getRpyCalib()[1] * (180 / M_PI);
         double yaw = calib.getRpyCalib()[2] * (180 / M_PI);
         desc += QString(" Your device is pointed %1° %2 and %3° %4.")
-                    .arg(QString::number(std::abs(pitch), 'g', 1), pitch > 0 ? "down" : "up",
-                         QString::number(std::abs(yaw), 'g', 1), yaw > 0 ? "left" : "right");
+                    .arg(QString::number(std::abs(pitch), 'g', 1),
+                         pitch > 0 ? "down" : "up",
+                         QString::number(std::abs(yaw), 'g', 1),
+                         yaw > 0 ? "left" : "right");
       }
     } catch (kj::Exception) {
       qInfo() << "invalid CalibrationParams";
@@ -348,18 +383,32 @@ void DevicePanel::poweroff() {
   }
 }
 
-PersonalisedPanel::PersonalisedPanel(QWidget* parent) : ListWidget(parent) {
+PersonalisedPanel::PersonalisedPanel(QWidget *parent) : ListWidget(parent) {
   // min, max, step
-  stopDistanceOffsetSb = new SpinboxControl("StoppingDistanceOffset","Stop Distance Offset", "The offset distance from the lead car the vehicle is meant to stop", "m", (double []){-2.0, 5.0, 0.1}, true);
+  stopDistanceOffsetSb = new SpinboxControl(
+      "StoppingDistanceOffset", "Stop Distance Offset",
+      "The offset distance from the lead car the vehicle is meant to stop", "m",
+      (double[]){-2.0, 5.0, 0.1}, true);
   addItem(stopDistanceOffsetSb);
 
-  drivePathOffsetSb = new SpinboxControl("DrivePathOffset","Path Skew Offset", "The path offset from center of the lane. Perform positive offset if the vehicle is currently skewed left.", "m", (double []){-1.0, 1.0, 0.05}, true);
+  drivePathOffsetSb = new SpinboxControl(
+      "DrivePathOffset", "Path Skew Offset",
+      "The path offset from center of the lane. Perform positive offset if the "
+      "vehicle is currently skewed left.",
+      "m", (double[]){-1.0, 1.0, 0.05}, true);
   addItem(drivePathOffsetSb);
 
-  fanPwmOverrideSb = new SpinboxControl("FanPwmOverride","Fan Speed", "Note: Lowering the fan speed may reduce the overall fan noise but risk of device overheating.", "%", (double []){0, 100.0, 10.0}, false);
+  fanPwmOverrideSb =
+      new SpinboxControl("FanPwmOverride", "Fan Speed",
+                         "Note: Lowering the fan speed may reduce the overall "
+                         "fan noise but risk of device overheating.",
+                         "%", (double[]){0, 100.0, 10.0}, false);
   addItem(fanPwmOverrideSb);
 
-  powerSaverEntryDurationSb = new SpinboxControl("PowerSaverEntryDuration","Device Poweroff", "Power saver entry duration after ignition is off.", "min", (double []){10, 720.0, 10.0}, false);
+  powerSaverEntryDurationSb =
+      new SpinboxControl("PowerSaverEntryDuration", "Device Poweroff",
+                         "Power saver entry duration after ignition is off.",
+                         "min", (double[]){10, 720.0, 10.0}, false);
   addItem(powerSaverEntryDurationSb);
 
   connect(uiState(), &UIState::uiUpdate, this, &PersonalisedPanel::updateState);
@@ -386,11 +435,14 @@ void PersonalisedPanel::updateState(const UIState &s) {
   }
 }
 
-SoftwarePanel::SoftwarePanel(QWidget* parent) : ListWidget(parent) {
+SoftwarePanel::SoftwarePanel(QWidget *parent) : ListWidget(parent) {
   gitCommitLbl = new LabelControl("Git Commit");
   osVersionLbl = new LabelControl("OS Version");
   versionLbl = new LabelControl("Version", "", getVersion());
-  lastUpdateLbl = new LabelControl("Last Update Status", "", "The status ezpilot last checked for an update. The updater only runs while the car is off.");
+  lastUpdateLbl =
+      new LabelControl("Last Update Status", "",
+                       "The status EZPilot last checked for an update. The "
+                       "updater only runs while the car is off.");
   updateBtn = new ButtonControl("Check for Update", "");
   featuresInput = new FeaturesControl();
   fingerprintInput = new FixFingerprintSelect();
@@ -398,24 +450,28 @@ SoftwarePanel::SoftwarePanel(QWidget* parent) : ListWidget(parent) {
 
   connect(updateBtn, &ButtonControl::clicked, [=]() {
     if (params.getBool("IsOffroad")) {
-      fs_watch->addPath(QString::fromStdString(params.getParamPath("LastUpdateTime")));
-      fs_watch->addPath(QString::fromStdString(params.getParamPath("UpdateFailedCount")));
-      fs_watch->addPath(QString::fromStdString(params.getParamPath("UpdateStatus")));
+      fs_watch->addPath(
+          QString::fromStdString(params.getParamPath("LastUpdateTime")));
+      fs_watch->addPath(
+          QString::fromStdString(params.getParamPath("UpdateFailedCount")));
+      fs_watch->addPath(
+          QString::fromStdString(params.getParamPath("UpdateStatus")));
       params.put("UpdateStatus", "checking");
       updateLabels();
     }
     std::system("pkill -1 -f selfdrive.updated");
   });
 
-  QWidget *widgets[] = {versionLbl, lastUpdateLbl, updateBtn, gitCommitLbl, osVersionLbl, featuresInput, fingerprintInput, branchInput};
-  for (QWidget* w : widgets) {
+  QWidget *widgets[] = {versionLbl,       lastUpdateLbl, updateBtn,
+                        gitCommitLbl,     osVersionLbl,  featuresInput,
+                        fingerprintInput, branchInput};
+  for (QWidget *w : widgets) {
     addItem(w);
   }
 
   fs_watch = new QFileSystemWatcher(this);
-  QObject::connect(fs_watch, &QFileSystemWatcher::fileChanged, [=](const QString path) {
-    updateLabels();
-  });
+  QObject::connect(fs_watch, &QFileSystemWatcher::fileChanged,
+                   [=](const QString path) { updateLabels(); });
 
   timer = new QTimer(this);
   timer->callOnTimeout(this, &SoftwarePanel::updateLabels);
@@ -426,9 +482,7 @@ void SoftwarePanel::showEvent(QShowEvent *event) {
   timer->start(1000);
 }
 
-void SoftwarePanel::hideEvent(QHideEvent *event) {
-  timer->stop();
-}
+void SoftwarePanel::hideEvent(QHideEvent *event) { timer->stop(); }
 
 void SoftwarePanel::updateLabels() {
   QString lastUpdate = QString();
@@ -470,7 +524,9 @@ void SoftwarePanel::updateLabels() {
     lastUpdate = "Failed to fetch update";
     allowed = true;
   } else if (!tm.empty()) {
-    lastUpdate = "Checked " + timeAgo(QDateTime::fromString(QString::fromStdString(tm + "Z"), Qt::ISODate));
+    lastUpdate = "Checked " +
+                 timeAgo(QDateTime::fromString(QString::fromStdString(tm + "Z"),
+                                               Qt::ISODate));
     allowed = true;
     if (status == "noInternet") {
       lastUpdate += ", no internet";
@@ -485,19 +541,23 @@ void SoftwarePanel::updateLabels() {
   lastUpdateLbl->setText(lastUpdate);
   updateBtn->setText(btnText);
   updateBtn->setEnabled(allowed);
-  gitCommitLbl->setText(QString::fromStdString(params.get("GitCommit")).left(10));
-  osVersionLbl->setText(QString::fromStdString(Hardware::get_os_version()).trimmed());
+  gitCommitLbl->setText(
+      QString::fromStdString(params.get("GitCommit")).left(10));
+  osVersionLbl->setText(
+      QString::fromStdString(Hardware::get_os_version()).trimmed());
 }
 
 C2NetworkPanel::C2NetworkPanel(QWidget *parent) : ListWidget(parent) {
   // wifi + tethering buttons
 #ifdef QCOM
   auto wifiBtn = new ButtonControl("Wi-Fi Settings", "OPEN");
-  connect(wifiBtn, &ButtonControl::clicked, [=]() { HardwareEon::launch_wifi(); });
+  connect(wifiBtn, &ButtonControl::clicked,
+          [=]() { HardwareEon::launch_wifi(); });
   addItem(wifiBtn);
 
   auto tetheringBtn = new ButtonControl("Tethering Settings", "OPEN");
-  connect(tetheringBtn, &ButtonControl::clicked, [=]() { HardwareEon::launch_tethering(); });
+  connect(tetheringBtn, &ButtonControl::clicked,
+          [=]() { HardwareEon::launch_tethering(); });
   addItem(tetheringBtn);
 #endif
   ipaddress = new LabelControl("IP Address", "");
@@ -519,9 +579,7 @@ void C2NetworkPanel::showEvent(QShowEvent *event) {
   timer->start(1500);
 }
 
-void C2NetworkPanel::hideEvent(QHideEvent *event) {
-  timer->stop();
-}
+void C2NetworkPanel::hideEvent(QHideEvent *event) { timer->stop(); }
 
 void C2NetworkPanel::updateLabels() {
   ipaddress->setText(getIPAddress());
@@ -530,29 +588,31 @@ void C2NetworkPanel::updateLabels() {
 
 QString C2NetworkPanel::getIPAddress() {
   std::string result = util::check_output("ifconfig wlan0");
-  if (result.empty()) return "";
+  if (result.empty())
+    return "";
 
   const std::string inetaddrr = "inet addr:";
   std::string::size_type begin = result.find(inetaddrr);
-  if (begin == std::string::npos) return "";
+  if (begin == std::string::npos)
+    return "";
 
   begin += inetaddrr.length();
   std::string::size_type end = result.find(' ', begin);
-  if (end == std::string::npos) return "";
+  if (end == std::string::npos)
+    return "";
 
   return result.substr(begin, end - begin).c_str();
 }
 
 QString C2NetworkPanel::getNetworkType() {
   const QMap<cereal::DeviceState::NetworkType, QString> network_type = {
-    {cereal::DeviceState::NetworkType::NONE, "None"},
-    {cereal::DeviceState::NetworkType::WIFI, "Wi-Fi"},
-    {cereal::DeviceState::NetworkType::ETHERNET, "ETH"},
-    {cereal::DeviceState::NetworkType::CELL2_G, "2G"},
-    {cereal::DeviceState::NetworkType::CELL3_G, "3G"},
-    {cereal::DeviceState::NetworkType::CELL4_G, "4G"},
-    {cereal::DeviceState::NetworkType::CELL5_G, "5G"}
-  };
+      {cereal::DeviceState::NetworkType::NONE, "None"},
+      {cereal::DeviceState::NetworkType::WIFI, "Wi-Fi"},
+      {cereal::DeviceState::NetworkType::ETHERNET, "ETH"},
+      {cereal::DeviceState::NetworkType::CELL2_G, "2G"},
+      {cereal::DeviceState::NetworkType::CELL3_G, "3G"},
+      {cereal::DeviceState::NetworkType::CELL4_G, "4G"},
+      {cereal::DeviceState::NetworkType::CELL5_G, "5G"}};
   auto &sm = *(uiState()->sm);
   return network_type[sm["deviceState"].getDeviceState().getNetworkType()];
 }
@@ -598,11 +658,13 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
   )");
   close_btn->setFixedSize(100, 100);
   sidebar_layout->addWidget(close_btn, 0, Qt::AlignTop);
-  QObject::connect(close_btn, &QPushButton::clicked, this, &SettingsWindow::closeSettings);
+  QObject::connect(close_btn, &QPushButton::clicked, this,
+                   &SettingsWindow::closeSettings);
 
   // setup panels
   DevicePanel *device = new DevicePanel(this);
-  QObject::connect(device, &DevicePanel::showDriverView, this, &SettingsWindow::showDriverView);
+  QObject::connect(device, &DevicePanel::showDriverView, this,
+                   &SettingsWindow::showDriverView);
 
   struct NavItem {
     QString name;
@@ -611,11 +673,16 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
   };
 
   std::vector<NavItem> panels = {
-    {"   Device", loadPixmap("../assets/kommu/device.png", {60, 60}), device},
-    {"   Network", loadPixmap("../assets/kommu/network.png", {60, 60}), network_panel(this)},
-    {"   Toggles", loadPixmap("../assets/kommu/toggles.png", {60, 60}), new TogglesPanel(this)},
-    {"   Personalised", loadPixmap("../assets/kommu/personalised.png", {60, 60}), new PersonalisedPanel(this)},
-    {"   Software", loadPixmap("../assets/kommu/software.png", {60, 60}), new SoftwarePanel(this)},
+      {"   Device", loadPixmap("../assets/kommu/device.png", {60, 60}), device},
+      {"   Network", loadPixmap("../assets/kommu/network.png", {60, 60}),
+       network_panel(this)},
+      {"   Toggles", loadPixmap("../assets/kommu/toggles.png", {60, 60}),
+       new TogglesPanel(this)},
+      {"   Personalised",
+       loadPixmap("../assets/kommu/personalised.png", {60, 60}),
+       new PersonalisedPanel(this)},
+      {"   Software", loadPixmap("../assets/kommu/software.png", {60, 60}),
+       new SoftwarePanel(this)},
   };
 
   const int padding = 55;
@@ -642,12 +709,14 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
       QPushButton:pressed {
         color: #ADADAD;
       }
-    )").arg(padding));
+    )")
+                           .arg(padding));
 
     nav_btns->addButton(btn);
     sidebar_layout->addWidget(btn, 0, Qt::AlignLeft);
 
-    const int lr_margin = name != "Network" ? 50 : 0;  // Network panel handles its own margins
+    const int lr_margin =
+        name != "Network" ? 50 : 0; // Network panel handles its own margins
     panel->setContentsMargins(lr_margin, 25, lr_margin, 25);
 
     ScrollView *panel_frame = new ScrollView(panel, this);
