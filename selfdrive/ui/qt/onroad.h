@@ -34,10 +34,16 @@ class OnroadHud : public QWidget {
   Q_PROPERTY(float leadDistance MEMBER leadDistance NOTIFY valueChanged);
   Q_PROPERTY(bool hasLead MEMBER hasLead NOTIFY valueChanged);
   Q_PROPERTY(float modelConfidence MEMBER modelConfidence NOTIFY valueChanged);
+  Q_PROPERTY(bool experimental_mode MEMBER experimental_mode NOTIFY valueChanged);
   Q_PROPERTY(bool experimentalMode MEMBER experimental_mode NOTIFY valueChanged);
   Q_PROPERTY(bool useStockAcc MEMBER useStockAcc NOTIFY valueChanged);
   Q_PROPERTY(int vtscMode MEMBER vtscMode NOTIFY valueChanged);
   Q_PROPERTY(bool hasLongControl MEMBER hasLongControl NOTIFY valueChanged);
+  Q_PROPERTY(float dmAwareness MEMBER dmAwareness NOTIFY valueChanged);
+  Q_PROPERTY(bool dmDistracted MEMBER dmDistracted NOTIFY valueChanged);
+  Q_PROPERTY(bool dmFaceDetected MEMBER dmFaceDetected NOTIFY valueChanged);
+  Q_PROPERTY(float dmYaw MEMBER dmYaw NOTIFY valueChanged);
+  Q_PROPERTY(float dmPitch MEMBER dmPitch NOTIFY valueChanged);
 
   Q_PROPERTY(float aEgo MEMBER aEgo NOTIFY valueChanged);
 

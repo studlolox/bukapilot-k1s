@@ -504,6 +504,7 @@ bool OnroadHud::manualMouseEvent(QMouseEvent *e) {
     Params().putBool("EndToEndToggle", next_e2e);
     uiState()->scene.end_to_end = next_e2e;
     setProperty("experimental_mode", next_e2e);
+    experimental_mode = next_e2e;
     update();
     return true;
   }
@@ -540,6 +541,7 @@ bool OnroadHud::manualMouseEvent(QMouseEvent *e) {
     Params().putBool("UseStockAcc", next_stock);
     uiState()->scene.use_stock_acc = next_stock;
     setProperty("useStockAcc", next_stock);
+    useStockAcc = next_stock;
     update();
     return true;
   }
