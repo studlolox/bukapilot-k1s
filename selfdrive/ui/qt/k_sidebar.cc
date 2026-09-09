@@ -51,7 +51,7 @@ protected:
 // SidebarItem: Frosted obsidian glass circular/squircle disc containing centered icon
 SidebarItem::SidebarItem(const QString& label, const QString &iconPath, QWidget *parent)
     : ClickableWidget(parent) {
-  setFixedSize(96, 96);
+  setFixedSize(108, 108);
   setToolTip(label);
 
   auto layout = new QVBoxLayout(this);
@@ -59,21 +59,21 @@ SidebarItem::SidebarItem(const QString& label, const QString &iconPath, QWidget 
   layout->setContentsMargins(0, 0, 0, 0);
 
   icon = new QLabel(this);
-  icon->setPixmap(loadPixmap(iconPath, {52, 52}));
+  icon->setPixmap(loadPixmap(iconPath, {60, 60}));
   icon->setAlignment(Qt::AlignCenter);
   icon->setStyleSheet("border: none; background: transparent;");
   layout->addWidget(icon);
 
   badge = new QLabel(this);
   badge->setAlignment(Qt::AlignCenter);
-  badge->setFixedSize(24, 24);
-  badge->move(68, 6);
+  badge->setFixedSize(28, 28);
+  badge->move(76, 6);
   badge->setStyleSheet(R"(
     background-color: #EF4444;
     color: white;
     border: 2px solid #0D0F15;
-    border-radius: 12px;
-    font-size: 13px;
+    border-radius: 14px;
+    font-size: 15px;
     font-weight: 700;
   )");
   badge->hide();
@@ -82,7 +82,7 @@ SidebarItem::SidebarItem(const QString& label, const QString &iconPath, QWidget 
     SidebarItem {
       background-color: rgba(255, 255, 255, 0.05);
       border: 1.5px solid rgba(255, 255, 255, 0.12);
-      border-radius: 28px;
+      border-radius: 34px;
     }
     SidebarItem:hover {
       background-color: rgba(0, 245, 212, 0.12);
@@ -105,14 +105,14 @@ void SidebarItem::setBadgeCount(int count) {
 }
 
 void SidebarItem::setIcon(const QString &iconPath) {
-  icon->setPixmap(loadPixmap(iconPath, {52, 52}));
+  icon->setPixmap(loadPixmap(iconPath, {60, 60}));
 }
 
 Sidebar::Sidebar(QWidget *parent) : QFrame(parent) {
   auto layout = new QVBoxLayout(this);
   layout->setAlignment(Qt::AlignHCenter | Qt::AlignTop);
   layout->setContentsMargins(10, 24, 10, 24);
-  layout->setSpacing(22);
+  layout->setSpacing(28);
 
   // 1. EZPilot Geometric Logo
   auto logo = new EzpilotLogoWidget(this);
@@ -138,7 +138,7 @@ Sidebar::Sidebar(QWidget *parent) : QFrame(parent) {
   layout->addStretch();
 
   setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
-  setFixedWidth(180);
+  setFixedWidth(200);
   setStyleSheet(R"(
     Sidebar {
       background-color: #0C1017;

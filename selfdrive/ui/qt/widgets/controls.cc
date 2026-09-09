@@ -50,7 +50,7 @@ AbstractControl::AbstractControl(const QString &title, const QString &desc, cons
   if (!desc.isEmpty()) {
     description = new QLabel(desc);
     description->setContentsMargins(20, 16, 20, 16);
-    description->setStyleSheet("font-size: 32px; color: #94A3B8;");
+    description->setStyleSheet("font-size: 38px; color: #94A3B8;");
     description->setWordWrap(true);
     description->setVisible(false);
     main_layout->addWidget(description);
@@ -163,8 +163,8 @@ ButtonControl::ButtonControl(const QString &title, const QString &text, const QS
   btn.setStyleSheet(R"(
     QPushButton {
       padding: 0 20px;
-      border-radius: 28px;
-      font-size: 30px;
+      border-radius: 30px;
+      font-size: 34px;
       font-weight: 600;
       color: #FFFFFF;
       background-color: rgba(28, 36, 52, 0.85);
@@ -193,13 +193,13 @@ ButtonControl::ButtonControl(const QString &title, const QString &text, const QS
         border: none;
         background: transparent;
         color: #E4E4E4;
-        font-size: 32px;
+        font-size: 36px;
         font-weight: 500;
       }
     )");
   }
 
-  btn.setFixedSize(240, 84);
+  btn.setFixedSize(250, 96);
   QObject::connect(&btn, &QPushButton::clicked, this, &ButtonControl::clicked);
   hlayout->addWidget(&btn);
 }
@@ -211,13 +211,13 @@ SettingsCard::SettingsCard(const QString &title, QWidget *parent)
   setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
 
   outer_layout = new QVBoxLayout(this);
-  outer_layout->setContentsMargins(36, 24, 36, 24);
+  outer_layout->setContentsMargins(36, 26, 36, 26);
   outer_layout->setSpacing(14);
 
   if (!title.isEmpty()) {
     title_label = new QLabel(title.toUpper());
     title_label->setStyleSheet(
-        "font-size: 24px; font-weight: 700; color: #00F5D4; letter-spacing: 1.5px; border: none; background: transparent; padding-bottom: 4px;");
+        "font-size: 30px; font-weight: 700; color: #00F5D4; letter-spacing: 1.5px; border: none; background: transparent; padding-bottom: 6px;");
     outer_layout->addWidget(title_label);
   }
 
@@ -275,9 +275,9 @@ ElidedLabel::ElidedLabel(const QString &text, QWidget *parent) : QLabel(text.tri
   setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
   setMinimumWidth(1);
   QFont f = font();
-  f.setPixelSize(35);
+  f.setPixelSize(38);
   setFont(f);
-  setStyleSheet("color: #E4E4E4; font-size: 35px;");
+  setStyleSheet("color: #E4E4E4; font-size: 38px;");
 }
 
 void ElidedLabel::resizeEvent(QResizeEvent* event) {

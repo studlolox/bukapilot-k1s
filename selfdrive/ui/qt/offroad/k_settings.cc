@@ -368,12 +368,12 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
 
   setStyleSheet(R"(
     #reboot_btn {
-      height: 92px;
-      border-radius: 28px;
+      height: 100px;
+      border-radius: 30px;
       background-color: rgba(28, 36, 52, 0.9);
       border: 1.5px solid rgba(255, 255, 255, 0.16);
       color: #FFFFFF;
-      font-size: 30px;
+      font-size: 34px;
       font-weight: 600;
     }
     #reboot_btn:hover {
@@ -387,12 +387,12 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
       color: #00F5D4;
     }
     #poweroff_btn {
-      height: 92px;
-      border-radius: 28px;
+      height: 100px;
+      border-radius: 30px;
       background-color: rgba(220, 38, 38, 0.85);
       border: 1.5px solid rgba(248, 113, 113, 0.5);
       color: #FFFFFF;
-      font-size: 30px;
+      font-size: 34px;
       font-weight: 600;
     }
     #poweroff_btn:hover {
@@ -742,13 +742,13 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
   QPushButton *close_btn = new QPushButton("←");
   close_btn->setStyleSheet(R"(
     QPushButton {
-      font-size: 44px;
+      font-size: 50px;
       font-weight: bold;
       border: 2px solid rgba(0, 245, 212, 0.45);
-      border-radius: 40px;
+      border-radius: 46px;
       background-color: rgba(15, 22, 32, 0.9);
       color: #00F5D4;
-      padding-bottom: 6px;
+      padding-bottom: 4px;
     }
     QPushButton:hover {
       border-color: #00F5D4;
@@ -761,7 +761,7 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
       color: #FFFFFF;
     }
   )");
-  close_btn->setFixedSize(80, 80);
+  close_btn->setFixedSize(92, 92);
   sidebar_layout->addWidget(close_btn, 0, Qt::AlignLeft);
   sidebar_layout->addSpacing(16);
   QObject::connect(close_btn, &QPushButton::clicked, this,
@@ -791,28 +791,28 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
     auto btn = new QPushButton(name);
     btn->setCheckable(true);
     btn->setChecked(nav_btns->buttons().size() == 0);
-    btn->setFixedHeight(92);
+    btn->setFixedHeight(112);
 
-    QPixmap raw_pix = loadPixmap(icon_path, {40, 40});
+    QPixmap raw_pix = loadPixmap(icon_path, {48, 48});
     if (!raw_pix.isNull()) {
       QIcon btn_icon;
       btn_icon.addPixmap(tintPixmap(raw_pix, QColor(148, 163, 184)), QIcon::Normal, QIcon::Off);
       btn_icon.addPixmap(tintPixmap(raw_pix, QColor(10, 13, 20)), QIcon::Normal, QIcon::On);
       btn_icon.addPixmap(tintPixmap(raw_pix, QColor(255, 255, 255)), QIcon::Active, QIcon::Off);
       btn->setIcon(btn_icon);
-      btn->setIconSize(QSize(40, 40));
+      btn->setIconSize(QSize(48, 48));
     }
 
     btn->setStyleSheet(R"(
       QPushButton {
         color: #94A3B8;
         border: none;
-        border-radius: 28px;
+        border-radius: 32px;
         background: transparent;
-        font-size: 36px;
+        font-size: 44px;
         font-weight: 500;
         text-align: left;
-        padding-left: 28px;
+        padding-left: 32px;
       }
       QPushButton:hover:!checked {
         color: #FFFFFF;
@@ -844,15 +844,15 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
   }
 
   sidebar_layout->addStretch();
-  sidebar_layout->setSpacing(16);
-  sidebar_layout->setContentsMargins(32, 32, 20, 32);
+  sidebar_layout->setSpacing(20);
+  sidebar_layout->setContentsMargins(28, 28, 20, 28);
 
   // main settings layout, sidebar + main panel
   QHBoxLayout *main_layout = new QHBoxLayout(this);
   main_layout->setContentsMargins(0, 0, 0, 0);
   main_layout->setSpacing(0);
 
-  sidebar_widget->setFixedWidth(440);
+  sidebar_widget->setFixedWidth(480);
   main_layout->addWidget(sidebar_widget);
   main_layout->addWidget(panel_widget);
 

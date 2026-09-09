@@ -349,14 +349,14 @@ protected:
 
     // 3. Digital Temperature Readout
     QString temp_str = QString::number((int)std::round(display_temp)) + "°C";
-    configFont(p, "Inter", 56, "Bold");
+    configFont(p, "Inter", 58, "Bold");
     p.setPen(QColor(255, 255, 255));
     p.drawText(QRect(0, cy - 48, width(), 64), Qt::AlignCenter, temp_str);
 
     // 4. Status Sub-label
-    configFont(p, "Inter", 20, "Medium");
+    configFont(p, "Inter", 26, "SemiBold");
     p.setPen(core_col);
-    p.drawText(QRect(0, cy + 24, width(), 30), Qt::AlignCenter, status_text);
+    p.drawText(QRect(0, cy + 24, width(), 32), Qt::AlignCenter, status_text);
   }
 
 private:
@@ -368,7 +368,7 @@ private:
 class StorageProgressWidget : public QWidget {
 public:
   explicit StorageProgressWidget(QWidget *parent = nullptr) : QWidget(parent) {
-    setFixedHeight(56);
+    setFixedHeight(68);
     setFixedWidth(300);
   }
 
@@ -402,7 +402,7 @@ protected:
     p.drawRoundedRect(fill_rc, r - 2, r - 2);
 
     // Text label
-    configFont(p, "Inter", 21, "Bold");
+    configFont(p, "Inter", 26, "Bold");
     p.setPen(QColor(255, 255, 255));
     QString label = QString("Storage: %1% Free").arg(display_pct);
     p.drawText(bar_rc, Qt::AlignCenter, label);
@@ -448,7 +448,7 @@ class ActionPillButton : public QPushButton {
 public:
   ActionPillButton(const QString &text, bool highlighted = false, QWidget *parent = nullptr)
       : QPushButton(text, parent), is_highlighted(highlighted) {
-    setFixedHeight(68);
+    setFixedHeight(84);
     setCursor(Qt::PointingHandCursor);
     setAttribute(Qt::WA_Hover, true);
     setStyleSheet("border: none; background: transparent;");
@@ -478,7 +478,7 @@ protected:
       p.setBrush(bg);
       p.drawRoundedRect(rc, r, r);
 
-      configFont(p, "Inter", 23, "Bold");
+      configFont(p, "Inter", 28, "Bold");
       p.setPen(QColor(0, 245, 212));
       p.drawText(rc, Qt::AlignCenter, text());
     } else {
@@ -493,7 +493,7 @@ protected:
       p.setBrush(bg);
       p.drawRoundedRect(rc, r, r);
 
-      configFont(p, "Inter", 23, "SemiBold");
+      configFont(p, "Inter", 28, "SemiBold");
       p.setPen(text_col);
       p.drawText(rc, Qt::AlignCenter, text());
     }
@@ -514,21 +514,21 @@ OffroadHome::OffroadHome(QWidget* parent) : QFrame(parent) {
   header_layout->setContentsMargins(10, 0, 10, 0);
 
   clock_label = new QLabel(QTime::currentTime().toString("hh:mm"), this);
-  clock_label->setStyleSheet("font-size: 34px; font-weight: 700; color: #FFFFFF; border: none; background: transparent;");
+  clock_label->setStyleSheet("font-size: 44px; font-weight: 700; color: #FFFFFF; border: none; background: transparent;");
 
   wifi_pill = new QLabel("  📶 WiFi  ", this);
   wifi_pill->setStyleSheet(R"(
     background-color: #141E28;
     color: #00F5D4;
     border: 1.5px solid #00F5D4;
-    border-radius: 18px;
-    font-size: 20px;
+    border-radius: 20px;
+    font-size: 24px;
     font-weight: 700;
-    padding: 6px 14px;
+    padding: 8px 18px;
   )");
 
   gps_pill = new QLabel("🛰️ 3D Fix", this);
-  gps_pill->setStyleSheet("font-size: 24px; font-weight: 600; color: #10B981; border: none; background: transparent;");
+  gps_pill->setStyleSheet("font-size: 26px; font-weight: 600; color: #10B981; border: none; background: transparent;");
 
   header_layout->addStretch();
   header_layout->addWidget(clock_label);
@@ -550,7 +550,7 @@ OffroadHome::OffroadHome(QWidget* parent) : QFrame(parent) {
   v_main_layout->setSpacing(12);
 
   auto v_tag = new QLabel("VEHICLE READINESS", card_vehicle);
-  v_tag->setStyleSheet("font-size: 24px; font-weight: 700; color: #64748B; letter-spacing: 1.5px; border: none; background: transparent;");
+  v_tag->setStyleSheet("font-size: 30px; font-weight: 700; color: #64748B; letter-spacing: 1.5px; border: none; background: transparent;");
   v_main_layout->addWidget(v_tag);
 
   auto v_split = new QHBoxLayout();
@@ -565,25 +565,25 @@ OffroadHome::OffroadHome(QWidget* parent) : QFrame(parent) {
   v_info_layout->setSpacing(12);
 
   vehicle_title = new QLabel("Toyota Corolla Cross", card_vehicle);
-  vehicle_title->setStyleSheet("font-size: 34px; font-weight: 700; color: #FFFFFF; border: none; background: transparent;");
+  vehicle_title->setStyleSheet("font-size: 40px; font-weight: 700; color: #FFFFFF; border: none; background: transparent;");
   vehicle_title->setWordWrap(true);
   v_info_layout->addWidget(vehicle_title);
 
   vehicle_sub = new QLabel("1.8L • TSS 2.0 (No-DSU)", card_vehicle);
-  vehicle_sub->setStyleSheet("font-size: 24px; font-weight: 500; color: #A0A5B5; border: none; background: transparent;");
+  vehicle_sub->setStyleSheet("font-size: 28px; font-weight: 500; color: #A0A5B5; border: none; background: transparent;");
   v_info_layout->addWidget(vehicle_sub);
 
   v_info_layout->addSpacing(4);
 
   system_status_pill = new QLabel("SYSTEM READY", card_vehicle);
   system_status_pill->setAlignment(Qt::AlignCenter);
-  system_status_pill->setFixedHeight(58);
+  system_status_pill->setFixedHeight(68);
   system_status_pill->setStyleSheet(R"(
     background-color: #133526;
     color: #10B981;
     border: 1.5px solid #10B981;
-    border-radius: 18px;
-    font-size: 24px;
+    border-radius: 22px;
+    font-size: 28px;
     font-weight: 700;
   )");
   v_info_layout->addWidget(system_status_pill);
@@ -591,15 +591,15 @@ OffroadHome::OffroadHome(QWidget* parent) : QFrame(parent) {
   v_info_layout->addSpacing(8);
 
   panda_status_label = new QLabel("● Panda TSS2 Linked", card_vehicle);
-  panda_status_label->setStyleSheet("font-size: 24px; font-weight: 600; color: #00F5D4; border: none; background: transparent;");
+  panda_status_label->setStyleSheet("font-size: 28px; font-weight: 600; color: #00F5D4; border: none; background: transparent;");
   v_info_layout->addWidget(panda_status_label);
 
   calib_status_label = new QLabel("● Vision Calibrated", card_vehicle);
-  calib_status_label->setStyleSheet("font-size: 24px; font-weight: 600; color: #10B981; border: none; background: transparent;");
+  calib_status_label->setStyleSheet("font-size: 28px; font-weight: 600; color: #10B981; border: none; background: transparent;");
   v_info_layout->addWidget(calib_status_label);
 
   gps_status_label = new QLabel("● GPS 3D Locked", card_vehicle);
-  gps_status_label->setStyleSheet("font-size: 24px; font-weight: 600; color: #10B981; border: none; background: transparent;");
+  gps_status_label->setStyleSheet("font-size: 28px; font-weight: 600; color: #10B981; border: none; background: transparent;");
   v_info_layout->addWidget(gps_status_label);
 
   v_info_layout->addStretch();
@@ -615,7 +615,7 @@ OffroadHome::OffroadHome(QWidget* parent) : QFrame(parent) {
   h_layout->setSpacing(14);
 
   auto h_tag = new QLabel("HARDWARE HEALTH", card_hardware);
-  h_tag->setStyleSheet("font-size: 24px; font-weight: 700; color: #64748B; letter-spacing: 1.5px; border: none; background: transparent;");
+  h_tag->setStyleSheet("font-size: 30px; font-weight: 700; color: #64748B; letter-spacing: 1.5px; border: none; background: transparent;");
   h_layout->addWidget(h_tag);
 
   thermal_gauge = new ThermalGaugeWidget(card_hardware);
@@ -626,13 +626,13 @@ OffroadHome::OffroadHome(QWidget* parent) : QFrame(parent) {
 
   device_info_pill = new QLabel("Device: K1S", card_hardware);
   device_info_pill->setAlignment(Qt::AlignCenter);
-  device_info_pill->setFixedHeight(46);
+  device_info_pill->setFixedHeight(56);
   device_info_pill->setFixedWidth(300);
   device_info_pill->setStyleSheet(R"(
     background-color: rgba(255, 255, 255, 0.04);
     border: 1.5px solid rgba(255, 255, 255, 0.08);
-    border-radius: 23px;
-    font-size: 21px;
+    border-radius: 28px;
+    font-size: 26px;
     font-weight: 600;
     color: #A0A5B5;
   )");
@@ -666,7 +666,7 @@ OffroadHome::OffroadHome(QWidget* parent) : QFrame(parent) {
   footer_layout->setContentsMargins(10, 0, 10, 0);
 
   version_label = new QLabel("ezpilot v0.8.13-k1s • Independent", this);
-  version_label->setStyleSheet("font-size: 20px; font-weight: 500; color: #64748B; border: none; background: transparent;");
+  version_label->setStyleSheet("font-size: 24px; font-weight: 500; color: #64748B; border: none; background: transparent;");
 
   footer_layout->addStretch();
   footer_layout->addWidget(version_label);
@@ -702,36 +702,36 @@ void OffroadHome::updateState(const UIState& s) {
       background-color: #381B1B;
       color: #EF4444;
       border: 1.5px solid #EF4444;
-      border-radius: 18px;
-      font-size: 24px;
+      border-radius: 22px;
+      font-size: 28px;
       font-weight: 700;
     )");
     panda_status_label->setText("● Panda Disconnected");
-    panda_status_label->setStyleSheet("font-size: 24px; font-weight: 600; color: #EF4444; border: none; background: transparent;");
+    panda_status_label->setStyleSheet("font-size: 28px; font-weight: 600; color: #EF4444; border: none; background: transparent;");
   } else if (initialising) {
     system_status_pill->setText("GETTING READY");
     system_status_pill->setStyleSheet(R"(
       background-color: #3B2E15;
       color: #F59E0B;
       border: 1.5px solid #F59E0B;
-      border-radius: 18px;
-      font-size: 24px;
+      border-radius: 22px;
+      font-size: 28px;
       font-weight: 700;
     )");
     panda_status_label->setText("● Panda Linked" + panda_suffix);
-    panda_status_label->setStyleSheet("font-size: 24px; font-weight: 600; color: #F59E0B; border: none; background: transparent;");
+    panda_status_label->setStyleSheet("font-size: 28px; font-weight: 600; color: #F59E0B; border: none; background: transparent;");
   } else {
     system_status_pill->setText("SYSTEM READY");
     system_status_pill->setStyleSheet(R"(
       background-color: #133526;
       color: #10B981;
       border: 1.5px solid #10B981;
-      border-radius: 18px;
-      font-size: 24px;
+      border-radius: 22px;
+      font-size: 28px;
       font-weight: 700;
     )");
     panda_status_label->setText("● Panda TSS2 Linked");
-    panda_status_label->setStyleSheet("font-size: 24px; font-weight: 600; color: #00F5D4; border: none; background: transparent;");
+    panda_status_label->setStyleSheet("font-size: 28px; font-weight: 600; color: #00F5D4; border: none; background: transparent;");
   }
 
   // Vision Calibration Status
@@ -743,24 +743,24 @@ void OffroadHome::updateState(const UIState& s) {
   }
   if (calib_ok) {
     calib_status_label->setText("● Vision Calibrated");
-    calib_status_label->setStyleSheet("font-size: 24px; font-weight: 600; color: #10B981; border: none; background: transparent;");
+    calib_status_label->setStyleSheet("font-size: 28px; font-weight: 600; color: #10B981; border: none; background: transparent;");
   } else {
     calib_status_label->setText("● Vision Standby");
-    calib_status_label->setStyleSheet("font-size: 24px; font-weight: 600; color: #94A3B8; border: none; background: transparent;");
+    calib_status_label->setStyleSheet("font-size: 28px; font-weight: 600; color: #94A3B8; border: none; background: transparent;");
   }
 
   // GPS Fix
   bool gps_ok = sm["liveLocationKalman"].getLiveLocationKalman().getGpsOK();
   if (gps_ok) {
     gps_status_label->setText("● GPS 3D Locked");
-    gps_status_label->setStyleSheet("font-size: 24px; font-weight: 600; color: #10B981; border: none; background: transparent;");
+    gps_status_label->setStyleSheet("font-size: 28px; font-weight: 600; color: #10B981; border: none; background: transparent;");
     gps_pill->setText("🛰️ 3D Fix");
-    gps_pill->setStyleSheet("font-size: 24px; font-weight: 600; color: #10B981; border: none; background: transparent;");
+    gps_pill->setStyleSheet("font-size: 26px; font-weight: 600; color: #10B981; border: none; background: transparent;");
   } else {
     gps_status_label->setText("● GPS Searching...");
-    gps_status_label->setStyleSheet("font-size: 24px; font-weight: 600; color: #94A3B8; border: none; background: transparent;");
+    gps_status_label->setStyleSheet("font-size: 28px; font-weight: 600; color: #94A3B8; border: none; background: transparent;");
     gps_pill->setText("🛰️ Searching");
-    gps_pill->setStyleSheet("font-size: 24px; font-weight: 600; color: #94A3B8; border: none; background: transparent;");
+    gps_pill->setStyleSheet("font-size: 26px; font-weight: 600; color: #94A3B8; border: none; background: transparent;");
   }
 
   // Vehicle model display
