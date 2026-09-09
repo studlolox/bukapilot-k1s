@@ -111,8 +111,8 @@ void SidebarItem::setIcon(const QString &iconPath) {
 Sidebar::Sidebar(QWidget *parent) : QFrame(parent) {
   auto layout = new QVBoxLayout(this);
   layout->setAlignment(Qt::AlignHCenter | Qt::AlignTop);
-  layout->setContentsMargins(10, 24, 10, 24);
-  layout->setSpacing(28);
+  layout->setContentsMargins(16, 40, 16, 36);
+  layout->setSpacing(26);
 
   // 1. EZPilot Geometric Logo
   auto logo = new EzpilotLogoWidget(this);

@@ -831,8 +831,9 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
     nav_btns->addButton(btn);
     sidebar_layout->addWidget(btn);
 
-    const int lr_margin = name != "Network" ? 36 : 0;
-    panel->setContentsMargins(lr_margin, 20, lr_margin, 20);
+    const int left_margin = 28;
+    const int right_margin = name != "Network" ? 52 : 30;
+    panel->setContentsMargins(left_margin, 38, right_margin, 38);
 
     ScrollView *panel_frame = new ScrollView(panel, this);
     panel_widget->addWidget(panel_frame);
@@ -845,14 +846,14 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
 
   sidebar_layout->addStretch();
   sidebar_layout->setSpacing(20);
-  sidebar_layout->setContentsMargins(28, 28, 20, 28);
+  sidebar_layout->setContentsMargins(46, 44, 28, 40);
 
   // main settings layout, sidebar + main panel
   QHBoxLayout *main_layout = new QHBoxLayout(this);
   main_layout->setContentsMargins(0, 0, 0, 0);
   main_layout->setSpacing(0);
 
-  sidebar_widget->setFixedWidth(480);
+  sidebar_widget->setFixedWidth(510);
   main_layout->addWidget(sidebar_widget);
   main_layout->addWidget(panel_widget);
 

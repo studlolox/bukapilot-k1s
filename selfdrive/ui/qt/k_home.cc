@@ -506,12 +506,12 @@ protected:
 
 OffroadHome::OffroadHome(QWidget* parent) : QFrame(parent) {
   auto root_layout = new QVBoxLayout(this);
-  root_layout->setContentsMargins(30, 20, 30, 20);
-  root_layout->setSpacing(18);
+  root_layout->setContentsMargins(40, 42, 50, 40);
+  root_layout->setSpacing(16);
 
   // 1. Top Header Bar (Clock, WiFi status pill, GPS satellite)
   auto header_layout = new QHBoxLayout();
-  header_layout->setContentsMargins(10, 0, 10, 0);
+  header_layout->setContentsMargins(12, 0, 12, 0);
 
   clock_label = new QLabel(QTime::currentTime().toString("hh:mm"), this);
   clock_label->setStyleSheet("font-size: 44px; font-weight: 700; color: #FFFFFF; border: none; background: transparent;");
@@ -663,7 +663,7 @@ OffroadHome::OffroadHome(QWidget* parent) : QFrame(parent) {
 
   // 4. Footer Bar
   auto footer_layout = new QHBoxLayout();
-  footer_layout->setContentsMargins(10, 0, 10, 0);
+  footer_layout->setContentsMargins(12, 0, 16, 0);
 
   version_label = new QLabel("ezpilot v0.8.13-k1s • Independent", this);
   version_label->setStyleSheet("font-size: 24px; font-weight: 500; color: #64748B; border: none; background: transparent;");

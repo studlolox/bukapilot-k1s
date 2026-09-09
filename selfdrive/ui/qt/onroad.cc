@@ -143,7 +143,7 @@ void OnroadAlerts::paintEvent(QPaintEvent *event) {
 
   if (alert.size == cereal::ControlsState::AlertSize::SMALL) {
     // 1. SMALL ALERT: Modern floating capsule pill
-    int pill_w = std::min(width() - 200, 1300);
+    int pill_w = std::min(width() - 240, 1260);
     int pill_h = 160;
     int pill_x = (width() - pill_w) / 2;
     int pill_y = height() - footer_h + 10;
@@ -166,10 +166,10 @@ void OnroadAlerts::paintEvent(QPaintEvent *event) {
 
   } else if (alert.size == cereal::ControlsState::AlertSize::MID) {
     // 2. MID ALERT: Modern floating centered card
-    int card_w = std::min(width() - 140, 1500);
+    int card_w = std::min(width() - 180, 1460);
     int card_h = 280;
     int card_x = (width() - card_w) / 2;
-    int card_y = height() - card_h - 40;
+    int card_y = height() - card_h - 60;
     QRect card_rc(card_x, card_y, card_w, card_h);
 
     // Frosted card with colored accent border
@@ -216,13 +216,13 @@ void OnroadAlerts::paintEvent(QPaintEvent *event) {
     configFont(p, "Inter", long_text ? 110 : 140, "Bold");
     p.setPen(QColor(255, 255, 255));
     p.drawText(
-        QRect(60, full_rc.top() + (long_text ? 220 : 250), width() - 120, 500),
+        QRect(80, full_rc.top() + (long_text ? 220 : 250), width() - 160, 500),
         Qt::AlignHCenter | Qt::TextWordWrap, alert.text1);
 
     configFont(p, "Inter", 72, "Medium");
     p.setPen(QColor(255, 255, 255, 230));
-    p.drawText(QRect(60, full_rc.height() - (long_text ? 360 : 420),
-                     width() - 120, 300),
+    p.drawText(QRect(80, full_rc.height() - (long_text ? 360 : 420),
+                     width() - 160, 300),
                Qt::AlignHCenter | Qt::TextWordWrap, alert.text2);
   }
 }
@@ -481,12 +481,12 @@ void OnroadHud::updateState(const UIState &s) {
 bool OnroadHud::manualMouseEvent(QMouseEvent *e) {
   QPoint pt = mapFromGlobal(e->globalPos());
 
-  int settings_cy = rect().bottom() - 125;
-  int settings_cx = 140;
-  int mode_cx = 380;
-  int wheel_cx = rect().right() - 420;
+  int settings_cy = rect().bottom() - 155;
+  int settings_cx = 170;
+  int mode_cx = 415;
+  int wheel_cx = rect().right() - 460;
   int wheel_cy = settings_cy;
-  int dm_cx = rect().right() - 140;
+  int dm_cx = rect().right() - 170;
   int dm_cy = settings_cy;
 
   // Settings button (bottom-left)
@@ -524,7 +524,7 @@ bool OnroadHud::manualMouseEvent(QMouseEvent *e) {
   }
 
   // Tap MAX Speed capsule to cycle distance gap (1 -> 2 -> 3 -> 1)
-  QRect max_rc(45, 35, 380, 140);
+  QRect max_rc(70, 58, 380, 140);
   if (max_rc.contains(pt) || max_rc.contains(e->pos())) {
     int next_bars = (distanceBars % 3) + 1;
     setProperty("distanceBars", next_bars);
@@ -535,7 +535,7 @@ bool OnroadHud::manualMouseEvent(QMouseEvent *e) {
   // Longitudinal
   int temp_w = 210;
   int adas_w = 330;
-  QRect adas_rc(rect().right() - temp_w - 45 - adas_w - 20, 35, adas_w, 140);
+  QRect adas_rc(rect().right() - temp_w - 90 - adas_w - 20, 58, adas_w, 140);
   if (adas_rc.contains(pt) || adas_rc.contains(e->pos())) {
     bool next_stock = !useStockAcc;
     Params().putBool("UseStockAcc", next_stock);
@@ -1142,27 +1142,27 @@ void OnroadHud::paintEvent(QPaintEvent *event) {
   p.setRenderHint(QPainter::Antialiasing);
 
   // 1. Subtle horizon top vignette
-  QLinearGradient bg(0, 0, 0, 260);
+  QLinearGradient bg(0, 0, 0, 280);
   bg.setColorAt(0, QColor(0, 0, 0, 140));
   bg.setColorAt(0.7, QColor(0, 0, 0, 50));
   bg.setColorAt(1, QColor(0, 0, 0, 0));
-  p.fillRect(0, 0, width(), 260, bg);
+  p.fillRect(0, 0, width(), 280, bg);
 
   // 2. MAX Speed & Distance Capsule (top-left) - 380x140
-  QRect max_rc(45, 35, 380, 140);
+  QRect max_rc(70, 58, 380, 140);
   drawSetSpeedBox(p, max_rc);
 
   // 3. Current Speed (top-center)
-  drawCurrentSpeed(p, rect().center().x(), 160);
+  drawCurrentSpeed(p, rect().center().x(), 180);
 
   // 4. ADAS System & Driving Mode capsule (top-right, preceding TEMP) - 330x140
   int temp_w = 210;
   int adas_w = 330;
-  QRect adas_rc(rect().right() - temp_w - 45 - adas_w - 20, 35, adas_w, 140);
+  QRect adas_rc(rect().right() - temp_w - 90 - adas_w - 20, 58, adas_w, 140);
   drawAdasCapsule(p, adas_rc);
 
   // 5. TEMP / Climate capsule (top-right) - 210x140
-  QRect temp_rc(rect().right() - temp_w - 45, 35, temp_w, 140);
+  QRect temp_rc(rect().right() - temp_w - 90, 58, temp_w, 140);
   QColor temp_col = QColor(240, 243, 246);
   if (thermalStatus == (int)cereal::DeviceState::ThermalStatus::YELLOW) {
     temp_col = QColor(251, 191, 36);
@@ -1172,15 +1172,15 @@ void OnroadHud::paintEvent(QPaintEvent *event) {
   drawStatusCapsule(p, temp_rc, "TEMP", temperature, temp_col);
 
   // 5. Bottom Controls & Telemetry Dock
-  int settings_cy = rect().bottom() - 125;
-  int settings_cx = 140;
-  int mode_cx = 380;
-  int wheel_cx = rect().right() - 420;
-  int dm_cx = rect().right() - 140;
+  int settings_cy = rect().bottom() - 155;
+  int settings_cx = 170;
+  int mode_cx = 415;
+  int wheel_cx = rect().right() - 460;
+  int dm_cx = rect().right() - 170;
 
   // Center Steering Torque Reactor Arc
   int arc_cx = rect().center().x();
-  int arc_y = rect().bottom();
+  int arc_y = rect().bottom() - 30;
   float available_half_w = 210.0f;
   drawBottomTorqueArcBar(p, arc_cx, arc_y, steerTorque, steerSaturated,
                          available_half_w);
@@ -1197,9 +1197,9 @@ void OnroadHud::paintEvent(QPaintEvent *event) {
   }
 
   // Right-edge AI Confidence Ball
-  int ball_x = rect().right() - 16;
-  int ball_top_y = 120;
-  int ball_bot_y = rect().bottom() - 160;
+  int ball_x = rect().right() - 44;
+  int ball_top_y = 145;
+  int ball_bot_y = rect().bottom() - 185;
   drawConfidenceBall(p, ball_x, ball_top_y, ball_bot_y, modelConfidence);
 }
 
@@ -1208,7 +1208,7 @@ void OnroadHud::drawConfidenceBall(QPainter &p, int x, int top_y, int bottom_y,
   int total_h = bottom_y - top_y;
   float clamped = std::clamp(confidence, 0.0f, 1.0f);
   float ball_y = (1.0f - clamped) * total_h + top_y;
-  const float r = 16.0f;
+  const float r = 13.0f;
 
   // 1. Subtle vertical tracking guide line
   p.setPen(QPen(QColor(255, 255, 255, 30), 2, Qt::SolidLine, Qt::RoundCap));
@@ -1241,14 +1241,14 @@ void OnroadHud::drawConfidenceBall(QPainter &p, int x, int top_y, int bottom_y,
 
   // 3. Outer soft glow
   if (status == STATUS_ENGAGED || getenv("FORCE_ONROAD") != NULL) {
-    QRadialGradient glow(x, ball_y, r * 2.2f);
+    QRadialGradient glow(x, ball_y, r * 1.8f);
     glow.setColorAt(
         0.0, QColor(top_col.red(), top_col.green(), top_col.blue(), 110));
     glow.setColorAt(1.0,
                     QColor(top_col.red(), top_col.green(), top_col.blue(), 0));
     p.setBrush(glow);
     p.setPen(Qt::NoPen);
-    p.drawEllipse(QPointF(x, ball_y), r * 2.2f, r * 2.2f);
+    p.drawEllipse(QPointF(x, ball_y), r * 1.8f, r * 1.8f);
   }
 
   // 4. Core Confidence Ball
