@@ -27,6 +27,22 @@ Normal development happens on:
 
 ---
 
+### Target Hardware Platform: KommuAssist K1S
+
+The primary hardware target for this repository is the **KommuAssist K1S**:
+- **Platform Base**: LeEco Le Pro 3 (`LEX720` / `ZL1`) / comma EON Gold hardware architecture
+- **System-on-Chip (SoC)**: Qualcomm Snapdragon 821 (`MSM8996 Pro`), 64-bit Quad-Core Kryo (2x 2.35 GHz + 2x 2.18 GHz)
+- **GPU & Graphics**: Qualcomm Adreno 530 (`b00000.qcom,kgsl-3d0`)
+- **Memory (RAM) & Storage**: 4GB / 6GB LPDDR4 RAM, 32GB / 64GB UFS 2.0 internal flash storage
+- **Screen Size**: 5.5-inch IPS LCD capacitive touchscreen (~73.8% screen-to-body ratio)
+- **Screen Resolution**: 1920 × 1080 pixels (Full HD 1080p, 16:9 aspect ratio, ~403 ppi)
+- **Operating System / Environment**: Comma NEOS 19.1 (custom stripped Android 6.0.1 Marshmallow kernel 3.18 + Termux GNU/Linux userspace)
+- **Integrated MCU**: Embedded STM32 Panda MCU inside device casing (auto-flashed with `panda/board/obj/icptr.bin.signed` interceptor firmware)
+- **Camera Sensors**: Sony IMX298 (16 MP road-facing camera) + OmniVision OV8856 (driver-monitoring camera)
+- **CPU & Power Governance**: Real-time CPU isolation locking Core 3 for CAN & controls via `rtshield.py`, with dynamic devfreq memory bus/GPU governors (`soc:qcom,cpubw`, `soc:qcom,m4m`, `b00000.qcom,kgsl-3d0`) for offroad thermal protection vs. onroad performance throughput
+
+---
+
 ### Primary Vehicle Target: Toyota Corolla Cross (TSS2)
 
 Active development and build focus in this repository is centered on the **Toyota Corolla Cross equipped with Toyota Safety Sense 2.0 (TSS2)**.
